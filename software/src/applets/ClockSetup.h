@@ -24,7 +24,7 @@ using HS::clock_m;
 
 class ClockSetup : public HemisphereApplet {
 public:
-    static constexpr int SLIDEOUT_TIME = 100;
+    static constexpr int SLIDEOUT_TIME = 50;
 
     enum ClockSetupCursor {
         PLAY_STOP,
