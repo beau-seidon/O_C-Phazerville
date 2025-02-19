@@ -91,7 +91,7 @@ public:
                 loop_index = 0;
                 skip_steps = 0;
                 reset_animation = HEMISPHERE_PULSE_ANIMATION_TIME_LONG;
-            } 
+            }
 
             loop_linker->SetLoopStep(loop_index);
 
@@ -166,14 +166,14 @@ public:
           GenerateLoop(false);
         }
     }
-        
+
     uint64_t OnDataRequest() {
         uint64_t data = 0;
         // example: pack property_name at bit 0, with size of 8 bits
-        Pack(data, PackLocation {0,4}, weight_1); 
-        Pack(data, PackLocation {4,4}, weight_2); 
-        Pack(data, PackLocation {8,4}, weight_4); 
-        Pack(data, PackLocation {12,4}, weight_8); 
+        Pack(data, PackLocation {0,4}, weight_1);
+        Pack(data, PackLocation {4,4}, weight_2);
+        Pack(data, PackLocation {8,4}, weight_4);
+        Pack(data, PackLocation {12,4}, weight_8);
         Pack(data, PackLocation {16,8}, loop_length);
         return data;
     }
@@ -206,7 +206,7 @@ protected:
   }
 
 private:
-    int cursor; // ProbDivCursor 
+    int cursor; // ProbDivCursor
     int weight_1;
     int weight_2;
     int weight_4;
@@ -228,7 +228,7 @@ private:
     // pointer arrays that make loops easier
     const int *weights[4] = {&weight_1, &weight_2, &weight_4, &weight_8};
     const int divs[4] = {1, 2, 4, 8};
-    
+
     void DrawInterface() {
         // divisions
         for(int i = 0; i < 4; i++) {
@@ -308,4 +308,8 @@ private:
         loop_step++;
         return value;
     }
+
+    void Unload() {
+        loop_linker->SetLooping(0);
+    };
 };
