@@ -517,6 +517,9 @@ struct GamepadFrame {
     uint32_t button_mask = 0;
     int16_t axis[GAMEPAD_AXIS_MAX];
 
+    int button_count = GAMEPAD_BUTTON_MAX;
+    int axis_count = GAMEPAD_AXIS_MAX;
+
     uint32_t last_changed = 0; // used for param learning in JoyStyx
 
     bool set_rumble = false;

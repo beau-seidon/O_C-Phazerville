@@ -27,6 +27,7 @@
     - new mode: sample and hold (trig/clk clocked or button clocked?)
     - new mode: slewed momentary modulation (2 input buttons drive output hi or low with adj slew rate. optional rtz upon release)
     - show icons for axis/button input type
+    - last cursor should display VID/PID
 */
 
 #include "HSGamepad.h"
@@ -159,6 +160,9 @@ class JoyStyx : public HemisphereApplet {
 
         void ConnectGamepad() {
             switch (gamepad_type) {
+                case (JoystickController::joytype_t::PS3_MOTION):
+                    gp = &PS3_MOTION;
+                    break;
                 case (JoystickController::joytype_t::PS4):
                     gp = &PS4;
                     break;
