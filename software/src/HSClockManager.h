@@ -176,7 +176,7 @@ public:
     // call this on every tick when clock is running, before all Controllers
     void SyncTrig(bool clocked, bool midi_sync = false) {
         const uint32_t now = OC::CORE::ticks;
-        const int ppqn = (midi_sync) ? 24 : clock_ppqn;
+        const int ppqn = (midi_sync) ? 2 : clock_ppqn;
 
         // Reset only when all multipliers have been met
         bool reset = 1;
