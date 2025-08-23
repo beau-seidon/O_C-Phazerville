@@ -161,6 +161,7 @@ public:
                 if (map.function == HEM_MIDI_CC_OUT)
                   map.function_cc = -1; // auto-learn MIDI CC
                 frame.MIDIState.clock_count = 0;
+                frame.MIDIState.UpdateMidiChannelFilter();
                 break;
             case hMIDIIn_A_POLY_VOICE:
             case hMIDIIn_B_POLY_VOICE:
