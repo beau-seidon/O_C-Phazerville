@@ -313,17 +313,17 @@ public:
 
 #if defined(__IMXRT1062__) && defined(ARDUINO_TEENSY41)
         thisUSB.Task();
-        while (usbHostMIDI.read()) {
-            const uint8_t message = usbHostMIDI.getType();
-            const uint8_t data1 = usbHostMIDI.getData1();
-            const uint8_t data2 = usbHostMIDI.getData2();
+        while (usbHostMIDI[0].read()) {
+            const uint8_t message = usbHostMIDI[0].getType();
+            const uint8_t data1 = usbHostMIDI[0].getData1();
+            const uint8_t data2 = usbHostMIDI[0].getData2();
 
             if (message == usbMIDI.SystemExclusive) {
                 // TODO: consider implementing SysEx import/export for Calibr8or
                 continue;
             }
 
-            f.MIDIState.ProcessMIDIMsg({usbHostMIDI.getChannel(), message, data1, data2});
+            f.MIDIState.ProcessMIDIMsg({usbHostMIDI[0].getChannel(), message, data1, data2});
 
             if (message == usbMIDI.NoteOn || message == usbMIDI.NoteOff) {
               dothething = true;

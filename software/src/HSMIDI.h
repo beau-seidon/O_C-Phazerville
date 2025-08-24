@@ -37,7 +37,8 @@
 #include <MIDI.h>
 #include <USBHost_t36.h>
 extern USBHost thisUSB;
-extern MIDIDevice usbHostMIDI;
+extern const int MAX_USB_DEVICES;
+extern MIDIDevice usbHostMIDI[];
 extern midi::MidiInterface<midi::SerialMIDI<HardwareSerial> > MIDI1;
 #endif
 

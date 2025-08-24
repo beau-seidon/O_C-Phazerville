@@ -106,13 +106,13 @@ public:
         ticks_per_beat = 1000000 / bpm;
         tempo_setting = tempo = bpm;
     }
-    
+
     void SetTempoFromTaps(uint32_t *taps, int count) {
         uint32_t total = 0;
         for (int i = 0; i < count; ++i) {
             total += taps[i];
         }
-        
+
         // update the tempo
         uint32_t clock_diff = total / count;
         ticks_per_beat = constrain(clock_diff, CLOCK_TICKS_MIN, CLOCK_TICKS_MAX); // time since last clock is new tempo
@@ -274,7 +274,7 @@ public:
         if (!p && midi_out_enabled) {
             usbMIDI.sendRealTime(usbMIDI.Start);
 #if defined(__IMXRT1062__)
-            usbHostMIDI.sendRealTime(usbMIDI.Start);
+            usbHostMIDI[0].sendRealTime(usbMIDI.Start);
 #ifdef ARDUINO_TEENSY41
             MIDI1.sendRealTime(midi::MidiType(usbMIDI.Start));
 #endif
@@ -289,7 +289,7 @@ public:
         if (midi_out_enabled) {
             usbMIDI.sendRealTime(usbMIDI.Stop);
 #if defined(__IMXRT1062__)
-            usbHostMIDI.sendRealTime(usbMIDI.Stop);
+            usbHostMIDI[0].sendRealTime(usbMIDI.Stop);
 #ifdef ARDUINO_TEENSY41
             MIDI1.sendRealTime(midi::MidiType(usbMIDI.Stop));
 #endif

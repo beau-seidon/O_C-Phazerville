@@ -47,12 +47,14 @@
 #if defined(__IMXRT1062__)
 #include "PhzConfig.h"
 
+const int MAX_USB_DEVICES = 4;
 USBHost thisUSB;
 USBHub hub1(thisUSB);
-MIDIDevice usbHostMIDI(thisUSB);
-
-JoystickController gamepad(thisUSB);
 USBHIDParser hid1(thisUSB);
+MIDIDevice usbHostMIDI[MAX_USB_DEVICES] {
+    MIDIDevice(thisUSB), MIDIDevice(thisUSB),
+    MIDIDevice(thisUSB), MIDIDevice(thisUSB)
+};
 
 #if defined(ARDUINO_TEENSY41)
 MIDI_CREATE_INSTANCE(HardwareSerial, Serial8, MIDI1);
@@ -213,11 +215,7 @@ void setup() {
   PhzConfig::setup();
 
   // USB Host support for both 4.0 and 4.1
-  #ifdef ENABLE_GAMEPAD
-  gamepad.begin();
-  #else
-  usbHostMIDI.begin();
-  #endif
+  thisUSB.begin();
 #endif
 
   // Display splash screen and optional calibration
@@ -252,6 +250,9 @@ void FASTRUN loop() {
   OC::CORE::app_loop_enabled = true;
   uint32_t menu_redraws = 0;
   while (true) {
+    #ifdef __IMXRT1062__
+        thisUSB.Task();
+    #endif
 
     // Refresh display
     if (MENU_REDRAW && OC::CORE::display_update_enabled) {

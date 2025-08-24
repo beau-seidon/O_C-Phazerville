@@ -599,14 +599,14 @@ public:
         // top-level MIDI-to-CV handling - alters frame outputs
 #if defined(__IMXRT1062__)
   #if defined(ARDUINO_TEENSY41)
-        ProcessMIDI(usbMIDI, usbHostMIDI, MIDI1);
+        ProcessMIDI(usbMIDI, usbHostMIDI[0], MIDI1);
         thisUSB.Task();
-        ProcessMIDI(usbHostMIDI, usbMIDI, MIDI1);
-        ProcessMIDI(MIDI1, usbMIDI, usbHostMIDI);
+        for (int i = 0; i < MAX_USB_DEVICES; ++i) { ProcessMIDI(usbHostMIDI[i], usbMIDI, MIDI1); }
+        ProcessMIDI(MIDI1, usbMIDI, usbHostMIDI[0]);
   #else
-        ProcessMIDI(usbMIDI, usbHostMIDI);
+        ProcessMIDI(usbMIDI, usbHostMIDI[0]);
         thisUSB.Task();
-        ProcessMIDI(usbHostMIDI, usbMIDI);
+        for (int i = 0; i < MAX_USB_DEVICES; ++i) { ProcessMIDI(usbHostMIDI[i], usbMIDI); }
   #endif
     ProcessGamepad(gamepad);
 #else

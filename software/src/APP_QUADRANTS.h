@@ -415,10 +415,10 @@ public:
 
     void Controller() {
         // top-level MIDI-to-CV handling - alters frame outputs
-        ProcessMIDI(usbMIDI, usbHostMIDI, MIDI1);
+        ProcessMIDI(usbMIDI, usbHostMIDI[0], MIDI1);
         thisUSB.Task();
-        ProcessMIDI(usbHostMIDI, usbMIDI, MIDI1);
-        ProcessMIDI(MIDI1, usbMIDI, usbHostMIDI);
+        for (int i = 0; i < MAX_USB_DEVICES; ++i) { ProcessMIDI(usbHostMIDI[i], usbMIDI, MIDI1); }
+        ProcessMIDI(MIDI1, usbMIDI, usbHostMIDI[0]);
 
         ProcessGamepad(gamepad);
 

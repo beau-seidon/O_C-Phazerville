@@ -305,9 +305,9 @@ public:
         // Process incoming MIDI traffic
         process_midi_in(usbMIDI);
 #ifdef ARDUINO_TEENSY41
-        process_midi_in(usbHostMIDI);
-        process_midi_in(MIDI1);
         thisUSB.Task();
+        for (int i = 0; i < MAX_USB_DEVICES; ++i) { process_midi_in(usbHostMIDI[i]); }
+        process_midi_in(MIDI1);
 #endif
 
         // Convert CV inputs to outgoing MIDI messages
