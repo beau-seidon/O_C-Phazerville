@@ -125,9 +125,7 @@
 
     // } // namespace GAMEPAD
 
-    extern USBHub hub1;
     extern JoystickController gamepad;
-    extern USBHIDParser hid1;
 
     #define GAMEPAD_AXIS_MAX 16
     #define GAMEPAD_BUTTON_MAX 32

@@ -208,6 +208,8 @@ static bool connected = false;
 
 
 void ProcessGamepad(JoystickController &device) {
+    thisUSB.Task();
+
     HS::IOFrame &f = HS::frame;
 
     f.GamepadState.gamepad_type = device.joystickType();
@@ -219,8 +221,8 @@ void ProcessGamepad(JoystickController &device) {
         if (!connected) {
             connected = true;
 #ifdef GAMEPAD_DEBUG
-            Serial.printf("VID: 0x%x\n", gamepad.idVendor());
-            Serial.printf("PID: 0x%x\n", gamepad.idProduct());
+            Serial.printf("VID: 0x%x\n", device.idVendor());
+            Serial.printf("PID: 0x%x\n", device.idProduct());
 #endif
         }
 

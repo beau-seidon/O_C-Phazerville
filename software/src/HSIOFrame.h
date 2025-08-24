@@ -510,7 +510,8 @@ constexpr GamepadMapping& pack(GamepadMapping& input) {
 };
 
 struct GamepadFrame {
-    GamepadMapping mapping[GAMEPADMAP_MAX];
+    uint16_t vid = 0x0;
+    uint16_t pid = 0x0;
 
     int gamepad_type = 0; // UNKNOWN = 0, PS3, PS3_MOTION, PS4, XBOX, XBOX360W, XBOX360USB, XBOXONE, SpaceNav, SWITCH, SNES, N64
 

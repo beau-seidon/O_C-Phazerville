@@ -51,6 +51,7 @@ const int MAX_USB_DEVICES = 4;
 USBHost thisUSB;
 USBHub hub1(thisUSB);
 USBHIDParser hid1(thisUSB);
+JoystickController gamepad(thisUSB);
 MIDIDevice usbHostMIDI[MAX_USB_DEVICES] {
     MIDIDevice(thisUSB), MIDIDevice(thisUSB),
     MIDIDevice(thisUSB), MIDIDevice(thisUSB)
