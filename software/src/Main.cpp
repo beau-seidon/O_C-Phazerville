@@ -47,15 +47,23 @@
 #if defined(__IMXRT1062__)
 #include "PhzConfig.h"
 
-const int MAX_USB_DEVICES = 4;
+
 USBHost thisUSB;
 USBHub hub1(thisUSB);
 USBHIDParser hid1(thisUSB);
 JoystickController gamepad(thisUSB);
+#ifdef ENABLE_MIDI_BIGBUFFER
+const int MAX_USB_DEVICES = 2;
+MIDIDevice_BigBuffer usbHostMIDI[MAX_USB_DEVICES] {  // for Korg Electribe 2 support
+    MIDIDevice_BigBuffer(thisUSB), MIDIDevice_BigBuffer(thisUSB)
+};
+#else
+const int MAX_USB_DEVICES = 4;
 MIDIDevice usbHostMIDI[MAX_USB_DEVICES] {
     MIDIDevice(thisUSB), MIDIDevice(thisUSB),
     MIDIDevice(thisUSB), MIDIDevice(thisUSB)
 };
+#endif
 
 #if defined(ARDUINO_TEENSY41)
 MIDI_CREATE_INSTANCE(HardwareSerial, Serial8, MIDI1);
