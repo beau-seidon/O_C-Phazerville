@@ -125,10 +125,16 @@
 
     // } // namespace GAMEPAD
 
-    extern JoystickController gamepad;
+    extern JoystickController joystick;
 
-    #define GAMEPAD_AXIS_MAX 16
-    #define GAMEPAD_BUTTON_MAX 32
+    enum GamepadFunctions {
+        GP_NOOP = 0,
+        GP_LEARN,
+        GP_CV,
+        GP_GATE,
+        GP_TRIG,
+        GP_FUNC_LAST = GP_TRIG
+    };
 
     struct GamePad {
         const char* type_name;
@@ -138,6 +144,12 @@
 
         const char* const* axis_name;
         const int axis_count;
+
+        const int* axis_byte_map;
+        const int* axis_scaling; // bit depth, e.g. 10-bit -> 0-1024
+        const int* axis_symmetry; // 0 = unipolar, 1 = bipolar
+        const int* axis_inversion; // 0 = normal, 1 = inverted
+        const int axis_center;
     };
 
     extern GamePad UNKNOWN;

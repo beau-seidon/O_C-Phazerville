@@ -30,9 +30,9 @@ static constexpr int MIDIMAP_MAX = 32;
 #else
 static constexpr int MIDIMAP_MAX = 8;
 #endif
-static constexpr int TRIGMAP_MAX = OC::DIGITAL_INPUT_LAST + ADC_CHANNEL_COUNT + DAC_CHANNEL_COUNT + MIDIMAP_MAX;
-static constexpr int CVMAP_MAX = ADC_CHANNEL_COUNT + DAC_CHANNEL_COUNT + MIDIMAP_MAX;
-static constexpr int GAMEPADMAP_MAX = 32;
+static constexpr int GAMEPAD_MAP_MAX = 32;
+static constexpr int TRIGMAP_MAX = OC::DIGITAL_INPUT_LAST + ADC_CHANNEL_COUNT + DAC_CHANNEL_COUNT + MIDIMAP_MAX + GAMEPAD_MAP_MAX;
+static constexpr int CVMAP_MAX = ADC_CHANNEL_COUNT + DAC_CHANNEL_COUNT + MIDIMAP_MAX + GAMEPAD_MAP_MAX;
 
 struct MIDIMessage {
   // values expected from MIDI library, so channel starts at 1 (one), not zero
@@ -491,18 +491,32 @@ struct MIDIFrame {
 };
 
 #ifdef __IMXRT1062__
-struct GamepadMapping {
-    // static constexpr size_t Size = 32; // Make this compatible with Packable
-    // uint32_t Pack() const {
-    //     return ( & 0xFF) | (function << 8) | (channel << 16) | (dac_polyvoice << 24);
-    // }
-    // void Unpack(uint32_t data) {
-    //     function_cc = data & 0xFF;
-    //     function = (data >> 8) & 0xFF;
-    //     if (function > HEM_MIDI_MAX_FUNCTION) function = 0;
-    //     channel = (data >> 16) & 0x1F;
-    //     dac_polyvoice = (data >> 24) & 0x0F;
-    // }
+
+
+struct GamepadMapSettings {
+    int gamepad_input;
+    int function;
+};
+struct GamepadMapping : public GamepadMapSettings {
+    static constexpr size_t Size = 64; // Make this compatible with Packable
+
+    int16_t trigout_countdown;
+    int output;
+
+    void CVOut(int value) {
+        output = value;
+    }
+
+    void ClockOut() {
+        trigout_countdown = HEMISPHERE_CLOCK_TICKS * HS::trig_length;
+        output = HEMISPHERE_MAX_CV;
+    }
+
+    void GateOut(bool high) {
+        Serial.print("gate = "); Serial.println(high);
+        output = (high ? PULSE_VOLTAGE : 0);
+        if (high) ClockOut();
+    }
 };
 
 constexpr GamepadMapping& pack(GamepadMapping& input) {
@@ -510,16 +524,18 @@ constexpr GamepadMapping& pack(GamepadMapping& input) {
 };
 
 struct GamepadFrame {
+    GamepadMapping mapping[GAMEPAD_MAP_MAX];
+
+    GamePad *gamepad = &UNKNOWN;
+
     uint16_t vid = 0x0;
     uint16_t pid = 0x0;
 
     int gamepad_type = 0; // UNKNOWN = 0, PS3, PS3_MOTION, PS4, XBOX, XBOX360W, XBOX360USB, XBOXONE, SpaceNav, SWITCH, SNES, N64
+    int prev_gamepad_type = gamepad_type;
 
     uint32_t button_mask = 0;
-    int16_t axis[GAMEPAD_AXIS_MAX];
-
-    int button_count = GAMEPAD_BUTTON_MAX;
-    int axis_count = GAMEPAD_AXIS_MAX;
+    int16_t axis[16];
 
     uint32_t last_changed = 0; // used for param learning in JoyStyx
 
@@ -527,6 +543,15 @@ struct GamepadFrame {
     bool set_leds = false;
 
     bool ps3_paired = false;
+
+
+    void Init() {
+        for (int ch = 0; ch < GAMEPAD_MAP_MAX; ++ch) {
+            mapping[ch].function = GP_LEARN; // enum this
+            mapping[ch].output = 0;
+        }
+    }
+
 };
 #endif
 

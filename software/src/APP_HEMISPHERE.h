@@ -608,7 +608,7 @@ public:
         thisUSB.Task();
         for (int i = 0; i < MAX_USB_DEVICES; ++i) { ProcessMIDI(usbHostMIDI[i], usbMIDI); }
   #endif
-    ProcessGamepad(gamepad);
+    ProcessGamepad(joystick);
 #else
         ProcessMIDI(usbMIDI);
 #endif

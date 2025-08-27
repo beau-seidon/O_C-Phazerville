@@ -20,11 +20,13 @@ struct CVInputMap {
     return 10 * attenuversion * abs(attenuversion) / 36;
   }
   int RawIn() {
-    return source <= ADC_CHANNEL_LAST
+    return (source <= ADC_CHANNEL_LAST)
       ? frame.inputs[source - 1]
       : (source - ADC_CHANNEL_LAST <= DAC_CHANNEL_LAST)
         ? frame.outputs[source - 1 - ADC_CHANNEL_LAST]
-        : frame.MIDIState.mapping[source - ADC_CHANNEL_LAST - DAC_CHANNEL_LAST - 1].output;
+        : (source - ADC_CHANNEL_LAST - DAC_CHANNEL_LAST <= MIDIMAP_MAX )
+            ? frame.MIDIState.mapping[source - ADC_CHANNEL_LAST - DAC_CHANNEL_LAST - 1 ].output
+            : frame.GamepadState.mapping[source - ADC_CHANNEL_LAST - DAC_CHANNEL_LAST - MIDIMAP_MAX - 1].output;
   }
 
   int In(int default_value = 0) {
@@ -90,6 +92,7 @@ struct DigitalInputMap {
     CV_INPUT,
     CV_OUTPUT,
     MIDI_MAP,
+    GAMEPAD_MAP
   };
 
   int8_t source = 0;
@@ -193,7 +196,10 @@ private:
         if (source < 1 + OC::DIGITAL_INPUT_LAST + ADC_CHANNEL_LAST + DAC_CHANNEL_LAST)
           return CV_OUTPUT;
 
-        return MIDI_MAP;
+        if (source < 1 + OC::DIGITAL_INPUT_LAST + ADC_CHANNEL_LAST + DAC_CHANNEL_LAST + MIDIMAP_MAX)
+            return MIDI_MAP;
+
+        return GAMEPAD_MAP;
       }
     }
   }
@@ -209,6 +215,9 @@ private:
   }
   inline int8_t midi_map_index() const {
     return source - 1 - OC::DIGITAL_INPUT_LAST - ADC_CHANNEL_LAST - DAC_CHANNEL_LAST;
+  }
+  inline int8_t gamepad_map_index() const {
+    return source - 1 - OC::DIGITAL_INPUT_LAST - ADC_CHANNEL_LAST - DAC_CHANNEL_LAST - MIDIMAP_MAX;
   }
 };
 

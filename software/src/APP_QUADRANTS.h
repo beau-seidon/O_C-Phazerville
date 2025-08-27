@@ -420,7 +420,7 @@ public:
         for (int i = 0; i < MAX_USB_DEVICES; ++i) { ProcessMIDI(usbHostMIDI[i], usbMIDI, MIDI1); }
         ProcessMIDI(MIDI1, usbMIDI, usbHostMIDI[0]);
 
-        ProcessGamepad(gamepad);
+        ProcessGamepad(joystick);
 
         // Clock Setup applet handles internal clock duties
         ClockSetup_instance.Controller();

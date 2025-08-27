@@ -34,6 +34,7 @@
 
 class JoyStyx : public HemisphereApplet {
     HS::GamepadFrame &gs = HS::frame.GamepadState;
+
     public:
         const char* applet_name() {
             return "JoyStyx";
@@ -48,22 +49,14 @@ class JoyStyx : public HemisphereApplet {
         };
 
         void Start() {
-            gamepad_type = gs.gamepad_type;
-            ConnectGamepad();
-
             param[0] = 0;
             param[1] = 1;
         }
 
         void Controller() {
-            if (gamepad_type != gs.gamepad_type) {
-                gamepad_type = gs.gamepad_type;
-                ConnectGamepad();
-
-                ForEachChannel(ch) {
-                    CONSTRAIN(param[ch], 0, gp->button_count-1 + gp->axis_count-1);
-                };
-            }
+            ForEachChannel(ch) {
+                CONSTRAIN(param[ch], 0, gs.gamepad->button_count-1 + gs.gamepad->axis_count-1);
+            };
 
             if (learn > -1) {
                 if (last_changed != gs.last_changed) {
@@ -73,8 +66,8 @@ class JoyStyx : public HemisphereApplet {
                 }
             } else {
                 ForEachChannel(ch) {
-                    if (param[ch] > gp->button_count-1) {
-                        cv[ch] = gs.axis[param[ch] - gp->button_count];
+                    if (param[ch] > gs.gamepad->button_count-1) {
+                        cv[ch] = gs.axis[param[ch] - gs.gamepad->button_count];
                         Out(ch, cv[ch]);
                     } else {
                         cv[ch] = (gs.button_mask & (1 << param[ch])) != 0;
@@ -105,8 +98,8 @@ class JoyStyx : public HemisphereApplet {
 
             // param LUT
             const struct { uint8_t &p; int min, max; } params[] = {
-                { param[0], 0, gp->button_count + gp->axis_count - 1}, // PARAM1
-                { param[1], 0, gp->button_count + gp->axis_count - 1}, // PARAM2
+                { param[0], 0, gs.gamepad->button_count + gs.gamepad->axis_count - 1}, // PARAM1
+                { param[1], 0, gs.gamepad->button_count + gs.gamepad->axis_count - 1}, // PARAM2
             };
 
             // adjust param
@@ -121,8 +114,8 @@ class JoyStyx : public HemisphereApplet {
         }
 
         void OnDataReceive(uint64_t data) {
-            param[0] = constrain(Unpack(data, PackLocation {0,8}), 0, gp->button_count + gp->axis_count - 1);
-            param[1] = constrain(Unpack(data, PackLocation {8,8}), 0, gp->button_count + gp->axis_count - 1);
+            param[0] = constrain(Unpack(data, PackLocation {0,8}), 0, gs.gamepad->button_count + gs.gamepad->axis_count - 1);
+            param[1] = constrain(Unpack(data, PackLocation {8,8}), 0, gs.gamepad->button_count + gs.gamepad->axis_count - 1);
         }
 
     protected:
@@ -137,52 +130,22 @@ class JoyStyx : public HemisphereApplet {
         int learn = -1;
         uint32_t last_changed = 0;
 
-        int gamepad_type;
-        GamePad *gp;
-
         void DrawInterface() {
             int y = 14;
             ForEachChannel(ch) {
                 char out_label[] = {(char)('A' + io_offset + ch), '\0' };
                 gfxPrint(1, y, out_label); gfxPrint(": ");
                 gfxPrint((learn == ch) ? "Learn" :
-                    (param[ch] > gp->button_count-1) ?
-                        gp->axis_name[param[ch] - gp->button_count] :
-                        gp->button_name[param[ch]]
+                    (param[ch] > gs.gamepad->button_count-1) ?
+                        gs.gamepad->axis_name[param[ch] - gs.gamepad->button_count] :
+                        gs.gamepad->button_name[param[ch]]
                 );
                 y += 14;
             }
             gfxPrint(1, y, cv[0]); gfxPrint(32, y, cv[1]);
             y += 14;
-            gfxPrint(1, y, gp->type_name);
+            gfxPrint(1, y, gs.gamepad->type_name);
             gfxCursor(7*2, 23 + cursor * 14, 49);
-        }
-
-        void ConnectGamepad() {
-            switch (gamepad_type) {
-                case (JoystickController::joytype_t::PS3_MOTION):
-                    gp = &PS3_MOTION;
-                    break;
-                case (JoystickController::joytype_t::PS4):
-                    gp = &PS4;
-                    break;
-                case (JoystickController::joytype_t::XBOXONE):
-                    gp = &XBOXONE;
-                    break;
-                case (JoystickController::joytype_t::XBOX360W):
-                case (JoystickController::joytype_t::XBOX360USB):
-                    gp = &XBOX360;
-                    break;
-                case (JoystickController::joytype_t::SNES):
-                    gp = &SNES;
-                    break;
-                case (JoystickController::joytype_t::N64):
-                    gp = &N64;
-                    break;
-                default:
-                    gp = &UNKNOWN;
-                    break;
-            }
         }
 
 };
