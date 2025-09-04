@@ -53,9 +53,9 @@ USBHub hub1(thisUSB);
 USBHIDParser hid1(thisUSB);
 JoystickController joystick(thisUSB);
 #ifdef ENABLE_MIDI_BIGBUFFER
-const int MAX_USB_DEVICES = 2;
+const int MAX_USB_DEVICES = 1;
 MIDIDevice_BigBuffer usbHostMIDI[MAX_USB_DEVICES] {  // for Korg Electribe 2 support
-    MIDIDevice_BigBuffer(thisUSB), MIDIDevice_BigBuffer(thisUSB)
+    MIDIDevice_BigBuffer(thisUSB)
 };
 #else
 const int MAX_USB_DEVICES = 4;

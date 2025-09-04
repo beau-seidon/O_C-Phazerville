@@ -24,9 +24,13 @@ struct CVInputMap {
       ? frame.inputs[source - 1]
       : (source - ADC_CHANNEL_LAST <= DAC_CHANNEL_LAST)
         ? frame.outputs[source - 1 - ADC_CHANNEL_LAST]
+#ifdef __IMXRT1062__
         : (source - ADC_CHANNEL_LAST - DAC_CHANNEL_LAST <= MIDIMAP_MAX )
             ? frame.MIDIState.mapping[source - ADC_CHANNEL_LAST - DAC_CHANNEL_LAST - 1 ].output
             : frame.GamepadState.mapping[source - ADC_CHANNEL_LAST - DAC_CHANNEL_LAST - MIDIMAP_MAX - 1].output;
+#else
+        : frame.MIDIState.mapping[source - ADC_CHANNEL_LAST - DAC_CHANNEL_LAST - 1].output;
+#endif
   }
 
   int In(int default_value = 0) {
@@ -196,10 +200,14 @@ private:
         if (source < 1 + OC::DIGITAL_INPUT_LAST + ADC_CHANNEL_LAST + DAC_CHANNEL_LAST)
           return CV_OUTPUT;
 
+#if defined(__IMXRT1062__)
         if (source < 1 + OC::DIGITAL_INPUT_LAST + ADC_CHANNEL_LAST + DAC_CHANNEL_LAST + MIDIMAP_MAX)
             return MIDI_MAP;
 
         return GAMEPAD_MAP;
+#else
+        return MIDI_MAP;
+#endif
       }
     }
   }
@@ -216,9 +224,11 @@ private:
   inline int8_t midi_map_index() const {
     return source - 1 - OC::DIGITAL_INPUT_LAST - ADC_CHANNEL_LAST - DAC_CHANNEL_LAST;
   }
+#ifdef __IMXRT1062__
   inline int8_t gamepad_map_index() const {
     return source - 1 - OC::DIGITAL_INPUT_LAST - ADC_CHANNEL_LAST - DAC_CHANNEL_LAST - MIDIMAP_MAX;
   }
+#endif
 };
 
 // Let's PackingUtils know this is Packable as is.
