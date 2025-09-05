@@ -32,6 +32,21 @@
 #ifdef __IMXRT1062__
 // #define GAMEPAD_DEBUG
 
+void printBits(uint32_t value) {
+  for (int i = 31; i >= 0; i--) {
+    // Shift right by i and mask out the lowest bit
+    uint8_t bit = (value >> i) & 1;
+    Serial.print(bit);
+
+    // Optional: add a space every 8 bits for readability
+    if (i % 8 == 0 && i != 0) {
+      Serial.print(" ");
+    }
+  }
+  Serial.println();
+}
+
+
 GamePad UNKNOWN {
     .type_name = "UNKNOWN",
     .button_name = (const char*[]){
@@ -248,7 +263,7 @@ static const int axis_change_threshold = (-HEMISPHERE_MIN_CV) / 8;
 // static bool connected = false;
 
 
-void ConnectGamepad() {
+void ConnectGamepad(JoystickController &device) {
     HS::IOFrame &f = HS::frame;
 
     switch (f.GamepadState.gamepad_type) {
@@ -276,9 +291,30 @@ void ConnectGamepad() {
             break;
     }
 
-    Serial.print("gamepadtype = "); Serial.println(f.GamepadState.gamepad->type_name);
+    f.GamepadState.vid = device.idVendor();
+    f.GamepadState.pid = device.idProduct();
+    f.GamepadState.Init();
 }
 
+void ConvertAxisData(int axis, int value) {
+    HS::IOFrame &f = HS::frame;
+    for(int ch = 0; ch < GAMEPAD_MAP_MAX; ++ch) {
+        GamepadMapping &map = f.GamepadState.mapping[ch];
+        if (map.function == GP_LEARN) {
+            map.gamepad_input = f.GamepadState.gamepad->button_count + axis;
+            map.function = GP_CV;
+        }
+        if (map.gamepad_input != f.GamepadState.gamepad->button_count + axis) continue;
+        switch (map.function) {
+            case GP_CV:
+                map.output = value;
+                break;
+            default:
+                continue;
+                break;
+        }
+    }
+}
 
 void UpdateAxis(JoystickController &device, GamePad &gp_type, const int axis_index) {
     HS::IOFrame &f = HS::frame;
@@ -287,57 +323,40 @@ void UpdateAxis(JoystickController &device, GamePad &gp_type, const int axis_ind
                 + (1 - 2 * gp_type.axis_inversion[axis_index]) * device.getAxis(gp_type.axis_byte_map[axis_index])
                 - gp_type.axis_center;
 
-    int scaled_axis = Proportion(data,  (data < 0) ?
-                                            (-(1 << gp_type.axis_scaling[axis_index]) * gp_type.axis_symmetry[axis_index]) :
-                                            (1 << gp_type.axis_scaling[axis_index]) - 1,
-                                        (data < 0) ? HEMISPHERE_MIN_CV : HEMISPHERE_MAX_CV);
+    int scaled_axis = Proportion(data,  (data < 0)
+                                            ? (-(1 << gp_type.axis_scaling[axis_index]) * gp_type.axis_symmetry[axis_index])
+                                            : (1 << gp_type.axis_scaling[axis_index]) - 1
+                                    , (data < 0) ? HEMISPHERE_MIN_CV : HEMISPHERE_MAX_CV);
 
     if (f.GamepadState.axis[axis_index] != scaled_axis) {
-        if (abs(f.GamepadState.axis[axis_index] - scaled_axis) > axis_change_threshold)
+        if (abs(f.GamepadState.axis[axis_index] - scaled_axis) > axis_change_threshold) {
             f.GamepadState.last_changed = gp_type.button_count + axis_index;
+        }
+        ConvertAxisData(axis_index, scaled_axis);
         f.GamepadState.axis[axis_index] = scaled_axis;
     }
 }
 
-
-void ConvertAxisData(int axis, int value) {
+void ConvertButtonData(int button, int mask) {
     HS::IOFrame &f = HS::frame;
     for(int ch = 0; ch < GAMEPAD_MAP_MAX; ++ch) {
         GamepadMapping &map = f.GamepadState.mapping[ch];
-        switch (map.function) {
-            case GP_LEARN:
-                map.gamepad_input = f.GamepadState.gamepad->button_count + axis;
-                map.function = GP_CV;
-            case GP_CV:
-                if (map.gamepad_input == f.GamepadState.gamepad->button_count + axis) map.output = value;
-                break;
-            default:
-                continue;
-                break;
+        if (map.function == GP_LEARN) {
+            map.gamepad_input = button;
         }
-    }
-}
-
-
-void ConvertButtonData(int last_button, int mask) {
-    HS::IOFrame &f = HS::frame;
-    for(int ch = 0; ch < GAMEPAD_MAP_MAX; ++ch) {
-        GamepadMapping &map = f.GamepadState.mapping[ch];
+        if (map.gamepad_input != button) continue;
         switch (map.function) {
-            case GP_LEARN:
-                map.gamepad_input = last_button;
-                map.function = GP_GATE;
             case GP_GATE:
-                if (map.gamepad_input == last_button)
-                    map.GateOut((mask & (1 << last_button)) != 0);
+                map.GateOut((mask & (1 << button)) != 0);  // add GATE_INV case?
                 break;
+            case GP_TRIG:
+                if ((mask & (1 << button)) != 0) map.ClockOut();  // add TRIG_ALWAYS case?
             default:
                 continue;
                 break;
         }
     }
 }
-
 
 void ProcessGamepad(JoystickController &device) {
     thisUSB.Task();
@@ -346,13 +365,7 @@ void ProcessGamepad(JoystickController &device) {
 
     f.GamepadState.gamepad_type = device.joystickType();
     if (f.GamepadState.prev_gamepad_type != f.GamepadState.gamepad_type) {
-        // Serial.println("connect gamepad");
-        ConnectGamepad();
-        f.GamepadState.vid = device.idVendor();
-        f.GamepadState.pid = device.idProduct();
-        // Serial.printf("VID: 0x%x\n", f.GamepadState.vid);
-        // Serial.printf("PID: 0x%x\n", f.GamepadState.pid);
-        f.GamepadState.Init();
+        ConnectGamepad(device);
         f.GamepadState.prev_gamepad_type = f.GamepadState.gamepad_type;
     }
     // if (f.GamepadState.gamepad_type == JoystickController::PS3 && !f.GamepadState.ps3_paired)
@@ -360,20 +373,12 @@ void ProcessGamepad(JoystickController &device) {
 
     if (device.available()) {
 
-//         if (!connected) {
-//             connected = true;
-// #ifdef GAMEPAD_DEBUG
-//             Serial.printf("VID: 0x%x\n", f.GamepadState.vid);
-//             Serial.printf("PID: 0x%x\n", f.GamepadState.pid);
-// #endif
-//         }
-
         uint64_t axis_changed_mask = device.axisChangedMask();
         uint32_t buttons = device.getButtons();
 
         if (axis_changed_mask) {
 #ifdef GAMEPAD_DEBUG
-            Serial.printf("axis mask: %x\n", axis_changed_mask);
+            // Serial.printf("axis mask: %x\n", axis_changed_mask);
 #endif
             switch (f.GamepadState.gamepad_type) {
                 // case JoystickController::PS3: {
@@ -662,7 +667,6 @@ void ProcessGamepad(JoystickController &device) {
                     for (int i = 0; i < XBOX360.axis_count; ++i) {
                         if (axis_changed_mask & (1 << XBOX360.axis_byte_map[i])) {
                             UpdateAxis(device, XBOX360, i);
-                            ConvertAxisData(i, f.GamepadState.axis[i]);
                         }
                     }
                 /* feedback */
@@ -684,7 +688,6 @@ void ProcessGamepad(JoystickController &device) {
                     for (int i = 0; i < XBOXONE.axis_count; ++i) {
                         if (axis_changed_mask & (1 << XBOXONE.axis_byte_map[i])) {
                             UpdateAxis(device, XBOXONE, i);
-                            ConvertAxisData(i, f.GamepadState.axis[i]);
                         }
                     }
                 /* feedback */
@@ -817,14 +820,16 @@ void ProcessGamepad(JoystickController &device) {
 
         if (f.GamepadState.button_mask != buttons) {
 #ifdef GAMEPAD_DEBUG
-            Serial.printf("buttons: %x\n", buttons);
+            // Serial.printf("buttons: %x\n", buttons);
 #endif
-            uint32_t buttons_changed = (~f.GamepadState.button_mask) & buttons;
+            uint32_t buttons_changed = f.GamepadState.button_mask ^ buttons;
             for (uint8_t i = 0; buttons_changed != 0; i++, buttons_changed >>= 1) {
-                if (buttons_changed & 1) f.GamepadState.last_changed = i;
+                if (buttons_changed & 1) {
+                    f.GamepadState.last_changed = i;
+                    ConvertButtonData(i, buttons);
+                }
             }
             f.GamepadState.button_mask = buttons;
-            ConvertButtonData(f.GamepadState.last_changed, f.GamepadState.button_mask);
         }
 
         device.joystickDataClear();

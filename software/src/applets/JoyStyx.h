@@ -42,20 +42,27 @@ class JoyStyx : public HemisphereApplet {
         const uint8_t* applet_icon() { return PhzIcons::gamepad; }
 
         enum JoyStyxCursor {
-            PARAM1,
-            PARAM2,
+            OUTPUT1,
+            OUTPUT2,
+            MAP_INDEX,
+            MAP_FUNCTION,
+            GP_INPUT,
+            GAMEPAD_INFO,
 
-            CURSOR_LAST = PARAM2
+            CURSOR_LAST = GAMEPAD_INFO
         };
 
         void Start() {
-            param[0] = 0;
-            param[1] = 1;
+            param[OUTPUT1] = 0;
+            param[OUTPUT2] = 1;
+            param[MAP_INDEX] = 0;
+            param[MAP_FUNCTION] = gs.mapping->function;
+            param[GP_INPUT] = gs.mapping->gamepad_input;
         }
 
         void Controller() {
             ForEachChannel(ch) {
-                CONSTRAIN(param[ch], 0, gs.gamepad->button_count-1 + gs.gamepad->axis_count-1);
+                CONSTRAIN(param[ch], 0, gs.gamepad->button_count + gs.gamepad->axis_count-1); // in case a new controller is plugged in
             };
 
             if (learn > -1) {
@@ -98,12 +105,35 @@ class JoyStyx : public HemisphereApplet {
 
             // param LUT
             const struct { uint8_t &p; int min, max; } params[] = {
-                { param[0], 0, gs.gamepad->button_count + gs.gamepad->axis_count - 1}, // PARAM1
-                { param[1], 0, gs.gamepad->button_count + gs.gamepad->axis_count - 1}, // PARAM2
+                { param[OUTPUT1], 0, gs.gamepad->button_count + gs.gamepad->axis_count - 1}, // pack local
+                { param[OUTPUT2], 0, gs.gamepad->button_count + gs.gamepad->axis_count - 1}, // pack local
+                { param[MAP_INDEX], 0, min(GAMEPAD_MAP_MAX - 1, gs.gamepad->button_count + gs.gamepad->axis_count - 1)},
+                { param[MAP_FUNCTION], 0, GamepadFunctions::GP_FUNC_LAST}, // pack in ioframe
+                { param[GP_INPUT], 0, gs.gamepad->button_count + gs.gamepad->axis_count - 1}, // pack in ioframe
+                { param[GAMEPAD_INFO], 0, 0}
             };
 
             // adjust param
             params[cursor].p = constrain(params[cursor].p + direction, params[cursor].min, params[cursor].max);
+
+            switch (cursor) {
+                case MAP_FUNCTION:
+                    gs.mapping[param[MAP_INDEX]].function = param[MAP_FUNCTION];
+                    if ((param[MAP_FUNCTION] == GamepadFunctions::GP_LEARN) &&  // feedback to ioframe to exit learn
+                        (gs.mapping[param[MAP_INDEX]].gamepad_input != param[GP_INPUT])) {
+                            param[GP_INPUT] = gs.mapping[param[MAP_INDEX]].gamepad_input;
+                            param[MAP_FUNCTION] = (param[GP_INPUT] < gs.gamepad->button_count) ?
+                                GamepadFunctions::GP_GATE :
+                                GamepadFunctions::GP_CV;
+                            gs.mapping[param[MAP_INDEX]].function = param[MAP_FUNCTION];
+                    }
+                    break;
+                case GP_INPUT:
+                    gs.mapping[param[MAP_INDEX]].gamepad_input = param[GP_INPUT];
+                    break;
+                default:
+                    break;
+            }
         }
 
         uint64_t OnDataRequest() {
@@ -126,26 +156,82 @@ class JoyStyx : public HemisphereApplet {
     private:
         int cursor;
         int cv[2] = {0, 0};
-        uint8_t param[2];
+        uint8_t param[CURSOR_LAST+1];
         int learn = -1;
         uint32_t last_changed = 0;
 
         void DrawInterface() {
+            if (cursor <= OUTPUT2) DrawOutputs();
+            else if (cursor < GAMEPAD_INFO) DrawMappingConfig();
+            else DrawGamepadInfo();
+        }
+
+        void DrawOutputs() {
+            const int ROW_HEIGHT = 12;
             int y = 14;
             ForEachChannel(ch) {
                 char out_label[] = {(char)('A' + io_offset + ch), '\0' };
                 gfxPrint(1, y, out_label); gfxPrint(": ");
                 gfxPrint((learn == ch) ? "Learn" :
-                    (param[ch] > gs.gamepad->button_count-1) ?
-                        gs.gamepad->axis_name[param[ch] - gs.gamepad->button_count] :
-                        gs.gamepad->button_name[param[ch]]
+                    (param[ch] < gs.gamepad->button_count) ?
+                        gs.gamepad->button_name[param[ch]] :
+                        gs.gamepad->axis_name[param[ch] - gs.gamepad->button_count]
                 );
-                y += 14;
+                y += ROW_HEIGHT;
             }
             gfxPrint(1, y, cv[0]); gfxPrint(32, y, cv[1]);
-            y += 14;
+            y += ROW_HEIGHT;
+            gfxPrint(1, y+6, gs.gamepad->type_name);
+            gfxCursor(7*2, 23 + cursor * ROW_HEIGHT, 49);
+        }
+
+        void DrawMappingConfig() {
+            const int ROW_HEIGHT = 14;
+            int y = ROW_HEIGHT;
+            gfxPrint(1, y, "Map: ");
+            gfxPrint(OC::Strings::cv_input_names_none[ADC_CHANNEL_LAST + DAC_CHANNEL_LAST + MIDIMAP_MAX + param[MAP_INDEX] + 1]);
+            y += ROW_HEIGHT;
+            gfxPrint(1, y, "Fn:  ");
+            switch (gs.mapping[param[MAP_INDEX]].function) {
+                case GamepadFunctions::GP_NOOP:
+                    gfxPrint("None");
+                    break;
+                case GamepadFunctions::GP_CV:
+                    gfxPrint("CV");
+                    break;
+                case GamepadFunctions::GP_GATE:
+                    gfxPrint("Gate");
+                    break;
+                case GamepadFunctions::GP_TRIG:
+                    gfxPrint("Trig");
+                    break;
+                case GamepadFunctions::GP_LEARN:
+                    gfxPrint("Learn");
+                    break;
+                default:
+                    break;
+            }
+            y += ROW_HEIGHT;
+            gfxPrint(1, y, "In:  "); gfxPrint(parseMapInput(gs.mapping[param[MAP_INDEX]].gamepad_input));
+            gfxCursor(4+7*3, 23 + (cursor - 2) * ROW_HEIGHT, 38);
+        }
+
+        void DrawGamepadInfo() {
+            int y = 14;
             gfxPrint(1, y, gs.gamepad->type_name);
-            gfxCursor(7*2, 23 + cursor * 14, 49);
+            y += 14;
+            gfxPrint(1, y, "VID:"); graphics.printf("0x%04X", gs.vid);
+            y += 14;
+            gfxPrint(1, y, "PID:"); graphics.printf("0x%04X", gs.pid);
+            y += 14;
+            gfxPrint(1, y, "B:"); gfxPrint(gs.gamepad->button_count);
+            gfxPrint(" X:"); gfxPrint(gs.gamepad->axis_count);
+        }
+
+        const char *const parseMapInput(int gp_in) {
+            return (gp_in < gs.gamepad->button_count) ?
+                gs.gamepad->button_name[gp_in] :
+                gs.gamepad->axis_name[gp_in - gs.gamepad->button_count];
         }
 
 };

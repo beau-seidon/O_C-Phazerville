@@ -129,11 +129,11 @@
 
     enum GamepadFunctions {
         GP_NOOP = 0,
-        GP_LEARN,
         GP_CV,
         GP_GATE,
         GP_TRIG,
-        GP_FUNC_LAST = GP_TRIG
+        GP_LEARN,
+        GP_FUNC_LAST = GP_LEARN
     };
 
     struct GamePad {

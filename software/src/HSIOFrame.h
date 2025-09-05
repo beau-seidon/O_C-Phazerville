@@ -490,12 +490,11 @@ struct MIDIFrame {
     }
 };
 
+
 #ifdef __IMXRT1062__
-
-
 struct GamepadMapSettings {
-    int gamepad_input;
     int function;
+    int gamepad_input;
 };
 struct GamepadMapping : public GamepadMapSettings {
     static constexpr size_t Size = 64; // Make this compatible with Packable
@@ -513,10 +512,20 @@ struct GamepadMapping : public GamepadMapSettings {
     }
 
     void GateOut(bool high) {
-        Serial.print("gate = "); Serial.println(high);
-        output = (high ? PULSE_VOLTAGE : 0);
-        if (high) ClockOut();
+        output = (high ? PULSE_VOLTAGE * (12 << 7) : 0);
     }
+
+    uint64_t Pack() const {
+        return PackPackables(function, gamepad_input);
+    }
+
+    void Unpack(uint64_t data) {
+        UnpackPackables(data, function, gamepad_input);
+        // validation for safety
+        if (gamepad_input > GAMEPAD_MAP_MAX - 1) gamepad_input = GAMEPAD_MAP_MAX - 1;  // check this
+        if (function > GP_FUNC_LAST) function = GP_NOOP;
+    }
+
 };
 
 constexpr GamepadMapping& pack(GamepadMapping& input) {
@@ -544,16 +553,22 @@ struct GamepadFrame {
 
     bool ps3_paired = false;
 
-
     void Init() {
-        for (int ch = 0; ch < GAMEPAD_MAP_MAX; ++ch) {
-            mapping[ch].function = GP_LEARN; // enum this
-            mapping[ch].output = 0;
+        for (int i = 0; i < GAMEPAD_MAP_MAX; ++i) {
+            if (i > gamepad->button_count + gamepad->axis_count - 1) {
+                mapping[i].gamepad_input = 0;
+                mapping[i].function = GP_NOOP;
+            } else {
+                mapping[i].gamepad_input = i;
+                mapping[i].function = (i < gamepad->button_count) ? GP_GATE : GP_CV;
+            }
+            mapping[i].output = 0;
         }
     }
 
 };
 #endif
+
 
 // shared IO Frame, updated every tick
 // this will allow chaining applets together, multiple stages of processing

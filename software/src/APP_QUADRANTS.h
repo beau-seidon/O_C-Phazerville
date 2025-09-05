@@ -151,6 +151,8 @@ public:
         // 300-500 = Sequences (aka Patterns)
         SEQUENCES_KEY   = 300, // + blob index
 
+        GAMEPAD_MAPS_KEY = 600,
+
         VERSION_KEY = 0xFFFF
     };
 
@@ -224,6 +226,12 @@ public:
         for (size_t midx = 0; midx < MIDIMAP_MAX; ++midx) {
           data = PackPackables(frame.MIDIState.mapping[midx]);
           PhzConfig::setValue(MIDI_MAPS_KEY + midx, data);
+        }
+
+        // Global Gamepad Maps
+        for (size_t gpx = 0; gpx < GAMEPAD_MAP_MAX; ++gpx) {
+          data = PackPackables(frame.GamepadState.mapping[gpx]);
+          PhzConfig::setValue(GAMEPAD_MAPS_KEY + gpx, data);
         }
 
         // User Patterns aka Sequences

@@ -133,6 +133,10 @@ struct DigitalInputMap {
         return frame.outputs[cv_output_index()] > GATE_THRESHOLD;
       case MIDI_MAP:
         return frame.MIDIState.mapping[midi_map_index()].output > GATE_THRESHOLD;
+#ifdef __IMXRT1062__
+      case GAMEPAD_MAP:
+        return frame.GamepadState.mapping[gamepad_map_index()].output > GATE_THRESHOLD;
+#endif
       case NONE:
       default:
         return false;
@@ -162,6 +166,10 @@ struct DigitalInputMap {
         return PARAM_MAP_ICONS + (1 + ADC_CHANNEL_LAST + cv_output_index()) * 8;
       case MIDI_MAP:
         return PhzIcons::midiIn;
+#ifdef __IMXRT1062__
+      case GAMEPAD_MAP:
+        return PhzIcons::gamepad;
+#endif
       case NONE:
       default:
         return PARAM_MAP_ICONS + 0;
