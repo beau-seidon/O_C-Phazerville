@@ -38,7 +38,7 @@ void printBits(uint32_t value) {
     uint8_t bit = (value >> i) & 1;
     Serial.print(bit);
 
-    // Optional: add a space every 8 bits for readability
+    // add a space every 8 bits for readability
     if (i % 8 == 0 && i != 0) {
       Serial.print(" ");
     }
@@ -117,7 +117,7 @@ GamePad PS4 {
         "PS",  "TPAD", "D_U", "D_R",
         "D_D", "D_L"
     },
-    .button_count = 18,
+    .button_count = 18,  // dpad buttons
     .axis_name = (const char*[]){
         "LT", "RT",
         "LX", "LY",
@@ -126,7 +126,30 @@ GamePad PS4 {
         "GyroX", "GyroY", "GyroZ",
         // "PadX", "PadY"
     },
-    .axis_count = 12
+    .axis_count = 12,
+    .axis_byte_map = (const int[]){  // 2 triggers, 4 joystick axes
+        3,4,
+        0,1,
+        2,5
+    },
+    .axis_scaling = (const int[]){  // 8-bit unsigned triggers, 8-bit "signed" joysticks
+        8,8,
+        7,7,
+        7,7
+    },
+    .axis_symmetry = (const int[]){
+        0,0,
+        1,1,
+        1,1
+    },
+    .axis_inversion = (const int[]){
+        0,0,
+        0,1,
+        0,1
+    },
+    .axis_center = 128,
+    .dpad_byte = 9,
+    .dpad_shift_map = (const int[]){ 14, 15, 16, 17 }  // up, right, down, left
 };
 
 GamePad XBOX {  // WIP
@@ -231,7 +254,12 @@ GamePad SNES {
     .axis_name = (const char*[]){
         "D_X", "D_Y"
     },
-    .axis_count = 2
+    .axis_count = 2,
+    .axis_byte_map = (const int[]){ 0, 1 },  // D-Pad up/down are y/x axes
+    .axis_scaling = (const int[]){ 7, 7 },  // 8-bit "signed"
+    .axis_symmetry = (const int[]){ 1, 1 },  // -128 -> 127
+    .axis_inversion = (const int[]){ 0, 1},  // y inverted
+    .axis_center = 128
 };
 
 GamePad N64 {
@@ -247,7 +275,14 @@ GamePad N64 {
     .axis_name = (const char*[]){
         "J_X", "J_Y"
     },
-    .axis_count = 2
+    .axis_count = 2,
+    .axis_byte_map = (const int[]){ 0, 1 },  // D-Pad up/down are y/x axes
+    .axis_scaling = (const int[]){ 7, 7 },  // 8-bit "signed"
+    .axis_symmetry = (const int[]){ 1, 1 },  // -128 -> 127
+    .axis_inversion = (const int[]){ 0, 1},  // y inverted
+    .axis_center = 128,
+    .dpad_byte = 9,
+    .dpad_shift_map = (const int[]){ 13, 14, 15, 16 }  // up, right, down, left
 };
 
 
@@ -319,9 +354,9 @@ void ConvertAxisData(int axis, int value) {
 void UpdateAxis(JoystickController &device, GamePad &gp_type, const int axis_index) {
     HS::IOFrame &f = HS::frame;
 
-    int data = (gp_type.axis_inversion[axis_index] * (2 * gp_type.axis_center - 1))
-                + (1 - 2 * gp_type.axis_inversion[axis_index]) * device.getAxis(gp_type.axis_byte_map[axis_index])
-                - gp_type.axis_center;
+    int data = ((2 * gp_type.axis_center - 1) * gp_type.axis_inversion[axis_index])
+                - gp_type.axis_center * gp_type.axis_symmetry[axis_index]
+                + device.getAxis(gp_type.axis_byte_map[axis_index]) * (1 - 2 * gp_type.axis_inversion[axis_index]);
 
     int scaled_axis = Proportion(data,  (data < 0)
                                             ? (-(1 << gp_type.axis_scaling[axis_index]) * gp_type.axis_symmetry[axis_index])
@@ -334,6 +369,47 @@ void UpdateAxis(JoystickController &device, GamePad &gp_type, const int axis_ind
         }
         ConvertAxisData(axis_index, scaled_axis);
         f.GamepadState.axis[axis_index] = scaled_axis;
+    }
+}
+
+void UpdateDpad(JoystickController &device, GamePad &gp_type, uint32_t &buttons) {
+    enum HatSwitch {
+        UP = 0,
+        UP_RIGHT,
+        RIGHT,
+        RIGHT_DOWN,
+        DOWN,
+        DOWN_LEFT,
+        LEFT,
+        LEFT_UP,
+    };
+
+    int data = device.getAxis(gp_type.dpad_byte);
+    int dpad_state = 0;
+    for (int d = 0; d < 4; ++d) {
+        switch (d) {
+            case 0:
+                dpad_state = (data == HatSwitch::LEFT_UP)
+                        || (data == HatSwitch::UP)
+                        || (data == HatSwitch::UP_RIGHT);
+                break;
+            case 1:
+                dpad_state = (data == HatSwitch::UP_RIGHT)
+                        || (data == HatSwitch::RIGHT)
+                        || (data == HatSwitch::RIGHT_DOWN);
+                break;
+            case 2:
+                dpad_state = (data == HatSwitch::RIGHT_DOWN)
+                        || (data == HatSwitch::DOWN)
+                        || (data == HatSwitch::DOWN_LEFT);
+                break;
+            case 3:
+                dpad_state = (data == HatSwitch::DOWN_LEFT)
+                        || (data == HatSwitch::LEFT)
+                        || (data == HatSwitch::LEFT_UP);
+                break;
+        }
+        buttons = (buttons & ~(1 << gp_type.dpad_shift_map[d])) | ((dpad_state & 1) << gp_type.dpad_shift_map[d]);
     }
 }
 
@@ -356,6 +432,19 @@ void ConvertButtonData(int button, int mask) {
                 break;
         }
     }
+}
+
+void UpdateButtons(JoystickController &device, uint32_t &buttons) {
+    HS::IOFrame &f = HS::frame;
+
+    uint32_t buttons_changed = f.GamepadState.button_mask ^ buttons;
+    for (uint8_t i = 0; buttons_changed != 0; i++, buttons_changed >>= 1) {
+        if (buttons_changed & 1) {
+            f.GamepadState.last_changed = i;
+            ConvertButtonData(i, buttons);
+        }
+    }
+    f.GamepadState.button_mask = buttons;
 }
 
 void ProcessGamepad(JoystickController &device) {
@@ -516,115 +605,18 @@ void ProcessGamepad(JoystickController &device) {
                 }
 
                 case JoystickController::PS4: {
-                /* triggers */
-                    // left trigger
-                    if (axis_changed_mask & (1 << 3)) {
-                        data = device.getAxis(3);  // 8-bit data range
-                        scaled_axis[0] = Proportion(data,  (data < 0) ? 0 : 255,  (data < 0) ? HEMISPHERE_MIN_CV : HEMISPHERE_MAX_CV);
-                        if (scaled_axis[0] != f.GamepadState.axis[0]) {
-                            f.GamepadState.axis[0] = scaled_axis[0];
-                            f.GamepadState.last_changed = PS4.button_count + 0;
+                /* triggers and axes */
+                    // for (int i = 0; i < PS4.axis_count; ++i) {
+                    for (int i = 0; i < 6; ++i) {  // special case for PS4, motion controls are "axes"
+                        if (axis_changed_mask & (1 << PS4.axis_byte_map[i])) {
+                            UpdateAxis(device, PS4, i);
                         }
                     }
-                    // right trigger
-                    if (axis_changed_mask & (1 << 4)) {
-                        data = device.getAxis(4);
-                        scaled_axis[1] = Proportion(data,  (data < 0) ? 0 : 255,  (data < 0) ? HEMISPHERE_MIN_CV : HEMISPHERE_MAX_CV);
-                        if (scaled_axis[1] != f.GamepadState.axis[1]) {
-                            f.GamepadState.axis[1] = scaled_axis[1];
-                            f.GamepadState.last_changed = PS4.button_count + 1;
-                        }
-                    }
-
-                /* axes */
-                    // left joystick x-axis
-                    if (axis_changed_mask & (1 << 0)) {
-                        data = device.getAxis(0) - 128;  // 8-bit data range, center is 128
-                        scaled_axis[2] = Proportion(data,  (data < 0) ? -128 : 127,  (data < 0) ? HEMISPHERE_MIN_CV : HEMISPHERE_MAX_CV);
-                        if (f.GamepadState.axis[2] != scaled_axis[2]) {
-                            if (abs(f.GamepadState.axis[2] - scaled_axis[2]) > axis_change_threshold)
-                                f.GamepadState.last_changed = PS4.button_count + 2;
-                            f.GamepadState.axis[2] = scaled_axis[2];
-                        }
-                    }
-                    // left joystick y-axis
-                    if (axis_changed_mask & (1 << 1)) {
-                        data = 255 - device.getAxis(1) - 128;  // y-axis is inverted
-                        scaled_axis[3] = Proportion(data,  (data < 0) ? -128 : 127,  (data < 0) ? HEMISPHERE_MIN_CV : HEMISPHERE_MAX_CV);
-                        if (f.GamepadState.axis[3] != scaled_axis[3]) {
-                            if (abs(f.GamepadState.axis[3] - scaled_axis[3]) > axis_change_threshold)
-                                f.GamepadState.last_changed = PS4.button_count + 3;
-                            f.GamepadState.axis[3] = scaled_axis[3];
-                        }
-                    }
-                    // right joystick x-axis
-                    if (axis_changed_mask & (1 << 2)) {
-                        data = device.getAxis(2) - 128;
-                        scaled_axis[4] = Proportion(data,  (data < 0) ? -128 : 127,  (data < 0) ? HEMISPHERE_MIN_CV : HEMISPHERE_MAX_CV);
-                        if (f.GamepadState.axis[4] != scaled_axis[4]) {
-                            if (abs(f.GamepadState.axis[4] - scaled_axis[4]) > axis_change_threshold)
-                                f.GamepadState.last_changed = PS4.button_count + 4;
-                            f.GamepadState.axis[4] = scaled_axis[4];
-                        }
-                    }
-                    // right joystick y-axis
-                    if (axis_changed_mask & (1 << 5)) {
-                        data = 255 - device.getAxis(5) - 128;  // y-axis is inverted
-                        scaled_axis[5] = Proportion(data,  (data < 0) ? -128 : 127,  (data < 0) ? HEMISPHERE_MIN_CV : HEMISPHERE_MAX_CV);
-                        if (f.GamepadState.axis[5] != scaled_axis[5]) {
-                            if (abs(f.GamepadState.axis[5] - scaled_axis[5]) > axis_change_threshold)
-                                f.GamepadState.last_changed = PS4.button_count + 5;
-                            f.GamepadState.axis[5] = scaled_axis[5];
-                        }
-                    }
-
                 /* d-pad */
-                    enum DPadShift {
-                        UP_SHIFT = 14,
-                        RIGHT_SHIFT = 15,
-                        DOWN_SHIFT = 16,
-                        LEFT_SHIFT = 17
-                    };
-                    enum HatSwitch {
-                        UP = 0,
-                        UP_RIGHT,
-                        RIGHT,
-                        RIGHT_DOWN,
-                        DOWN,
-                        DOWN_LEFT,
-                        LEFT,
-                        LEFT_UP,
-                        OFF = 8
-                    };
-                    data = device.getAxis(9);
-                    int dpad_state = 0;
-                    for (int d = UP_SHIFT; d <= LEFT_SHIFT; ++d) {
-                        switch (d) {
-                            case UP_SHIFT:
-                                    dpad_state = (data == HatSwitch::LEFT_UP)
-                                            || (data == HatSwitch::UP)
-                                            || (data == HatSwitch::UP_RIGHT);
-                                    break;
-                            case RIGHT_SHIFT:
-                                    dpad_state = (data == HatSwitch::UP_RIGHT)
-                                            || (data == HatSwitch::RIGHT)
-                                            || (data == HatSwitch::RIGHT_DOWN);
-                                    break;
-                            case DOWN_SHIFT:
-                                    dpad_state = (data == HatSwitch::RIGHT_DOWN)
-                                            || (data == HatSwitch::DOWN)
-                                            || (data == HatSwitch::DOWN_LEFT);
-                                    break;
-                            case LEFT_SHIFT:
-                                    dpad_state = (data == HatSwitch::DOWN_LEFT)
-                                            || (data == HatSwitch::LEFT)
-                                            || (data == HatSwitch::LEFT_UP);
-                                    break;
-                        }
-                        buttons = (buttons & ~(1 << d)) | ((dpad_state & 1) << d);
+                    if (axis_changed_mask & (1 << PS4.dpad_byte)) {
+                        UpdateDpad(device, PS4, buttons);
                     }
-
-                /* motion */
+                /* motion */  // still experimental
                     for (int i = 6, j = 0; j < 12; ++i, j+=2) {
                         if (axis_changed_mask & (3 << (13+j))) { // 16-bit, check if either byte has changed
                             int motion_sensor_scale = (i > 8) ? 32767 : 8192;  // axes 6,7,8 are accel; axes 9,10,11 are gyro
@@ -639,7 +631,6 @@ void ProcessGamepad(JoystickController &device) {
                             }
                         }
                     }
-
                 /* feedback */
                     if (f.GamepadState.set_rumble) {
                         f.GamepadState.set_rumble = false;
@@ -651,7 +642,6 @@ void ProcessGamepad(JoystickController &device) {
                         // int r, g, b;
                         // device.setLEDs(r, g, b);
                     }
-
                 /* extra stuff */
                     // printAngles();
                     break;
@@ -705,25 +695,10 @@ void ProcessGamepad(JoystickController &device) {
                 }
 
                 case JoystickController::SNES: {
-                /* axes */
-                    // d-pad x-axis
-                    if (axis_changed_mask & (1 << 0)) {  // scaled_axis[2]?
-                        data = device.getAxis(0) - 128; // 8-bit data range, center is 128
-                        scaled_axis[0] = Proportion(data,  (data < 0) ? -128 : 127,  (data < 0) ? HEMISPHERE_MIN_CV : HEMISPHERE_MAX_CV);
-                        if (f.GamepadState.axis[0] != scaled_axis[0]) {
-                            if (abs(f.GamepadState.axis[0] - scaled_axis[0]) > axis_change_threshold)
-                                f.GamepadState.last_changed = SNES.button_count + 0;
-                            f.GamepadState.axis[0] = scaled_axis[0];
-                        }
-                    }
-                    // d-pad y-axis
-                    if (axis_changed_mask & (1 << 1)) {  // scaled_axis[3]?
-                        data = 255 - device.getAxis(1) - 128;  // y-axis is inverted
-                        scaled_axis[1] = Proportion(data,  (data < 0) ? -128 : 127,  (data < 0) ? HEMISPHERE_MIN_CV : HEMISPHERE_MAX_CV);
-                        if (f.GamepadState.axis[1] != scaled_axis[1]) {
-                            if (abs(f.GamepadState.axis[1] - scaled_axis[1]) > axis_change_threshold)
-                                f.GamepadState.last_changed = SNES.button_count + 1;
-                            f.GamepadState.axis[1] = scaled_axis[1];
+                /* "axes" */
+                    for (int i = 0; i < SNES.axis_count; ++i) {
+                        if (axis_changed_mask & (1 << SNES.axis_byte_map[i])) {
+                            UpdateAxis(device, SNES, i);
                         }
                     }
                     break;
@@ -731,71 +706,14 @@ void ProcessGamepad(JoystickController &device) {
 
                 case JoystickController::N64: {
                 /* axes */
-                    // joystick x-axis
-                    if (axis_changed_mask & (1 << 0)) {
-                        data = device.getAxis(0) - 128;  // 8-bit data range, center is 128
-                        scaled_axis[0] = Proportion(data,  (data < 0) ? -128 : 127,  (data < 0) ? HEMISPHERE_MIN_CV : HEMISPHERE_MAX_CV);
-                        if (f.GamepadState.axis[0] != scaled_axis[0]) {
-                            if (abs(f.GamepadState.axis[0] - scaled_axis[0]) > 0)
-                                f.GamepadState.last_changed = N64.button_count + 0;
-                            f.GamepadState.axis[0] = scaled_axis[0];
+                    for (int i = 0; i < N64.axis_count; ++i) {
+                        if (axis_changed_mask & (1 << N64.axis_byte_map[i])) {
+                            UpdateAxis(device, N64, i);
                         }
                     }
-                    // joystick y-axis
-                    if (axis_changed_mask & (1 << 1)) {
-                        data = 255 - device.getAxis(1) - 128; // y-axis is inverted
-                        scaled_axis[1] = Proportion(data,  (data < 0) ? -128 : 127,  (data < 0) ? HEMISPHERE_MIN_CV : HEMISPHERE_MAX_CV);
-                        if (f.GamepadState.axis[1] != scaled_axis[1]) {
-                            if (abs(f.GamepadState.axis[1] - scaled_axis[1]) > 0)
-                                f.GamepadState.last_changed = N64.button_count + 1;
-                            f.GamepadState.axis[1] = scaled_axis[1];
-                        }
-                    }
-
                 /* d-pad */
-                    enum DPadShift {
-                        UP_SHIFT = 13,
-                        RIGHT_SHIFT = 14,
-                        DOWN_SHIFT = 15,
-                        LEFT_SHIFT = 16
-                    };
-                    enum HatSwitch {
-                        UP = 0,
-                        UP_RIGHT,
-                        RIGHT,
-                        RIGHT_DOWN,
-                        DOWN,
-                        DOWN_LEFT,
-                        LEFT,
-                        LEFT_UP,
-                        OFF = 15
-                    };
-                    data = device.getAxis(9);
-                    int dpad_state = 0;
-                    for (int d = UP_SHIFT; d <= LEFT_SHIFT; ++d) {
-                        switch (d) {
-                            case UP_SHIFT:
-                                    dpad_state = (data == HatSwitch::LEFT_UP)
-                                            || (data == HatSwitch::UP)
-                                            || (data == HatSwitch::UP_RIGHT);
-                                    break;
-                            case RIGHT_SHIFT:
-                                    dpad_state = (data == HatSwitch::UP_RIGHT)
-                                            || (data == HatSwitch::RIGHT)
-                                            || (data == HatSwitch::RIGHT_DOWN);
-                                    break;
-                            case DOWN_SHIFT:
-                                    dpad_state = (data == HatSwitch::RIGHT_DOWN)
-                                            || (data == HatSwitch::DOWN)
-                                            || (data == HatSwitch::DOWN_LEFT);
-                                    break;
-                            case LEFT_SHIFT:
-                                    dpad_state = (data == HatSwitch::DOWN_LEFT)
-                                            || (data == HatSwitch::LEFT)
-                                            || (data == HatSwitch::LEFT_UP);
-                                    break;
-                        }
-                        buttons = (buttons & ~(1 << d)) | ((dpad_state & 1) << d);
+                    if (axis_changed_mask & (1 << N64.dpad_byte)) {
+                        UpdateDpad(device, N64, buttons);
                     }
                     break;
                 }
@@ -822,14 +740,7 @@ void ProcessGamepad(JoystickController &device) {
 #ifdef GAMEPAD_DEBUG
             // Serial.printf("buttons: %x\n", buttons);
 #endif
-            uint32_t buttons_changed = f.GamepadState.button_mask ^ buttons;
-            for (uint8_t i = 0; buttons_changed != 0; i++, buttons_changed >>= 1) {
-                if (buttons_changed & 1) {
-                    f.GamepadState.last_changed = i;
-                    ConvertButtonData(i, buttons);
-                }
-            }
-            f.GamepadState.button_mask = buttons;
+            UpdateButtons(device, buttons);
         }
 
         device.joystickDataClear();

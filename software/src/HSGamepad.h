@@ -150,6 +150,8 @@
         const int* axis_symmetry; // 0 = unipolar, 1 = bipolar
         const int* axis_inversion; // 0 = normal, 1 = inverted
         const int axis_center;
+        const int dpad_byte;
+        const int* dpad_shift_map;
     };
 
     extern GamePad UNKNOWN;
