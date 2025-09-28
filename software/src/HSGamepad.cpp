@@ -125,7 +125,7 @@ GamePad PS4 {
         "RX", "RY",
         "AcclX", "AcclY", "AcclZ",
         "GyroX", "GyroY", "GyroZ",
-        // "PadX", "PadY"
+        // "T1_X", "T1_Y", "T2_X", "T2_Y"
     },
     .axis_count = 12,
     .axis_byte_map = (const int[]){  // 2 triggers, 4 joystick axes
@@ -416,6 +416,7 @@ void UpdateDpad(JoystickController &device, GamePad &gp_type, uint32_t &buttons)
 
 void ConvertButtonData(int button, int mask) {
     HS::IOFrame &f = HS::frame;
+
     for(int ch = 0; ch < GAMEPAD_MAP_MAX; ++ch) {
         GamepadMapping &map = f.GamepadState.mapping[ch];
         if (map.function == GP_LEARN) {
@@ -587,6 +588,38 @@ void ProcessGamepad(JoystickController &device) {
                             }
                         }
                     }
+
+                /* touchpad */
+                    // ForEachChannel(fng) { // fingers 1 and 2
+                    //     if (axis_changed_mask & (0xFF << (35+(4*fng)))) {
+                    //         uint8_t touch = device.getAxis(35+(4*fng));
+                    //         uint8_t x_lo = device.getAxis(36+(4*fng));
+                    //         uint8_t xhi_ylo = device.getAxis(37+(4*fng));
+                    //         uint8_t y_hi = device.getAxis(38+(4*fng));
+
+                    //         bool finger_active = !(touch & 0x80);
+                    //         uint16_t x = ((xhi_ylo & 0x0F) << 8) | x_lo;
+                    //         uint16_t y = (y_hi << 4) | ((xhi_ylo & 0xF0) >> 4);
+
+                    //         if (finger_active) {
+                    //             int x_res = 1920;
+                    //             int y_res = 942;
+                    //             scaled_axis[12+2*fng] = Proportion(x, x_res, (x < x_res/2) ? HEMISPHERE_MIN_CV : HEMISPHERE_MAX_CV);
+                    //             scaled_axis[12+1+2*fng] = Proportion(y, y_res, (y < y_res/2) ? HEMISPHERE_MIN_CV : HEMISPHERE_MAX_CV);
+                    //         } else {
+                    //             scaled_axis[12+2*fng] = 0;
+                    //             scaled_axis[12+1+2*fng] = 0;
+                    //         }
+
+                    //         ForEachChannel(crd) { // x and y coords
+                    //             if (f.GamepadState.axis[12+2*fng+crd] != scaled_axis[12+2*fng+crd]) {
+                    //                 if (abs(f.GamepadState.axis[12+2*fng+crd] - scaled_axis[12+2*fng+crd]) > axis_change_threshold)
+                    //                     f.GamepadState.last_changed = PS4.button_count + 12+2*fng+crd;
+                    //                 f.GamepadState.axis[12+2*fng+crd] = scaled_axis[12+2*fng+crd];
+                    //             }
+                    //         }
+                    //     }
+                    // }
 
                 /* feedback */
                     if (f.GamepadState.set_rumble) {
