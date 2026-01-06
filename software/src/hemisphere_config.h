@@ -109,6 +109,10 @@
 #include "applets/hMIDIIn.h"
 #include "applets/hMIDIOut.h"
 
+#ifdef ARDUINO_TEENSY41
+#include "applets/JoyStyx.h"
+#endif
+
 template<class A>
 struct DeclareApplet {
   const int id;
@@ -140,7 +144,7 @@ private:
   }
 };
 
-AppletRegistry reg{
+AppletRegistry reg{  // free id's: 1, 2, 66, 84-87, 91-149, 151+ (update this if you use one)
     DeclareApplet<ADSREG>{8, 0x01},
     DeclareApplet<ADEG>{34, 0x01},
     DeclareApplet<ASR>{47, 0x09},
@@ -189,6 +193,9 @@ AppletRegistry reg{
 #endif
     DeclareApplet<GateDelay>{29, 0x04},
     DeclareApplet<GatedVCA>{17, 0x50},
+#ifdef ARDUINO_TEENSY41
+    DeclareApplet<JoyStyx>{83, 0x80},
+#endif
     DeclareApplet<Logic>{10, 0x44},
     DeclareApplet<LowerRenz>{21, 0x01},
     DeclareApplet<Metronome>{50, 0x04},
@@ -207,7 +214,7 @@ AppletRegistry reg{
     DeclareApplet<ProbabilityMelody>{62, 0x04},
     DeclareApplet<Relabi>{89, 0x01},
     DeclareApplet<ResetClock>{70, 0x14},
-    DeclareApplet<RndWalk>{69, 0x01},
+    DeclareApplet<RndWalk>{69, 0x01}, // nice
     DeclareApplet<RunglBook>{44, 0x01},
     DeclareApplet<ScaleDuet>{26, 0x08},
     DeclareApplet<Schmitt>{40, 0x40},

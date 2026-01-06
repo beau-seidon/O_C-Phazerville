@@ -120,7 +120,14 @@ void HS::IOFrame::Load() {
             }
         }
     }
-
+#ifdef ARDUINO_TEENSY41
+    for (int i = 0; i < GAMEPAD_MAP_MAX; ++i) {
+        GamepadMapping& g = GamepadState.mapping[i];
+        if (g.trigout_countdown > 0) {
+            if (--g.trigout_countdown == 0) g.output = 0;
+        }
+    }
+#endif
     // pre-calculate clock triggers
     for (int ch = 0; ch < APPLET_SLOTS * 2; ++ch) {
       bool result = 0;

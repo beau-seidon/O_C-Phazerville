@@ -20,6 +20,10 @@
 #include "HSClockManager.h"
 #include "util/util_macros.h"
 
+#ifdef ARDUINO_TEENSY41
+#include "HSGamepad.h"
+#endif
+
 namespace HS {
 
 static constexpr int GATE_THRESHOLD = 15 << 7; // 1.25 volts
@@ -28,8 +32,9 @@ static constexpr int MIDIMAP_MAX = 32;
 #else
 static constexpr int MIDIMAP_MAX = 8;
 #endif
-static constexpr int TRIGMAP_MAX = OC::DIGITAL_INPUT_LAST + ADC_CHANNEL_COUNT + DAC_CHANNEL_COUNT + MIDIMAP_MAX;
-static constexpr int CVMAP_MAX = ADC_CHANNEL_COUNT + DAC_CHANNEL_COUNT + MIDIMAP_MAX;
+static constexpr int GAMEPAD_MAP_MAX = 32;
+static constexpr int TRIGMAP_MAX = OC::DIGITAL_INPUT_LAST + ADC_CHANNEL_COUNT + DAC_CHANNEL_COUNT + MIDIMAP_MAX + GAMEPAD_MAP_MAX;
+static constexpr int CVMAP_MAX = ADC_CHANNEL_COUNT + DAC_CHANNEL_COUNT + MIDIMAP_MAX + GAMEPAD_MAP_MAX;
 
 struct MIDIMessage {
   // values expected from MIDI library, so channel starts at 1 (one), not zero
@@ -487,6 +492,86 @@ struct MIDIFrame {
     }
 };
 
+
+#ifdef ARDUINO_TEENSY41
+struct GamepadMapSettings {
+    int function;
+    int gamepad_input;
+};
+struct GamepadMapping : public GamepadMapSettings {
+    static constexpr size_t Size = 64; // Make this compatible with Packable
+
+    int16_t trigout_countdown;
+    int output;
+
+    void CVOut(int value) {
+        output = value;
+    }
+
+    void ClockOut() {
+        trigout_countdown = HEMISPHERE_CLOCK_TICKS * HS::trig_length;
+        output = HEMISPHERE_MAX_CV;
+    }
+
+    void GateOut(bool high) {
+        output = (high ? PULSE_VOLTAGE * (12 << 7) : 0);
+    }
+
+    uint64_t Pack() const {
+        return PackPackables(function, gamepad_input);
+    }
+
+    void Unpack(uint64_t data) {
+        UnpackPackables(data, function, gamepad_input);
+        // validation for safety
+        if (gamepad_input > GAMEPAD_MAP_MAX - 1) gamepad_input = GAMEPAD_MAP_MAX - 1;  // check this
+        if (function > GP_FUNC_LAST) function = GP_NOOP;
+    }
+
+};
+
+constexpr GamepadMapping& pack(GamepadMapping& input) {
+    return input;
+};
+
+struct GamepadFrame {
+    GamepadMapping mapping[GAMEPAD_MAP_MAX];
+
+    GamePad *gamepad = &UNKNOWN;
+
+    uint16_t vid = 0x0;
+    uint16_t pid = 0x0;
+
+    int gamepad_type = 0; // UNKNOWN = 0, PS3, PS3_MOTION, PS4, XBOX, XBOX360W, XBOX360USB, XBOXONE, SpaceNav, SWITCH, SNES, N64
+    int prev_gamepad_type = gamepad_type;
+
+    uint32_t button_mask = 0;
+    int16_t axis[16];
+
+    uint32_t last_changed = 0; // used for param learning in JoyStyx
+
+    bool set_rumble = false;
+    bool set_leds = false;
+
+    bool ps3_paired = false;
+
+    void Init() {
+        for (int i = 0; i < GAMEPAD_MAP_MAX; ++i) {
+            if (i > gamepad->button_count + gamepad->axis_count - 1) {
+                mapping[i].gamepad_input = 0;
+                mapping[i].function = GP_NOOP;
+            } else {
+                mapping[i].gamepad_input = i;
+                mapping[i].function = (i < gamepad->button_count) ? GP_GATE : GP_CV;
+            }
+            mapping[i].output = 0;
+        }
+    }
+
+};
+#endif
+
+
 // shared IO Frame, updated every tick
 // this will allow chaining applets together, multiple stages of processing
 struct IOFrame {
@@ -515,6 +600,10 @@ struct IOFrame {
 
     /* MIDI message queue/cache */
     MIDIFrame MIDIState;
+
+#ifdef ARDUINO_TEENSY41
+    GamepadFrame GamepadState;
+#endif
 
     void Init() {
       MIDIState.Init();

@@ -50,6 +50,10 @@
 USBHost thisUSB;
 USBHub hub1(thisUSB);
 MIDIDevice_BigBuffer usbHostMIDI(thisUSB);
+#ifdef ARDUINO_TEENSY41
+USBHIDParser hid1(thisUSB);
+JoystickController joystick(thisUSB);
+#endif
 
 #if defined(ARDUINO_TEENSY41)
 MIDI_CREATE_INSTANCE(HardwareSerial, Serial8, MIDI1);
@@ -242,7 +246,7 @@ void setup() {
   PhzConfig::Init();
 
   // USB Host support for both 4.0 and 4.1
-  usbHostMIDI.begin();
+  thisUSB.begin();
 #endif
 
   // Display splash screen and optional calibration

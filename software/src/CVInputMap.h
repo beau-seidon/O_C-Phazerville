@@ -27,11 +27,17 @@ struct CVInputMap {
   }
 
   int RawIn() {
-    return source <= ADC_CHANNEL_LAST
+    return (source <= ADC_CHANNEL_LAST)
       ? frame.inputs[source - 1]
       : (source - ADC_CHANNEL_LAST <= DAC_CHANNEL_LAST)
-        ? frame.ViewOut(source - 1 - ADC_CHANNEL_LAST)
+        ? frame.outputs[source - 1 - ADC_CHANNEL_LAST]
+#ifdef ARDUINO_TEENSY41
+        : (source - ADC_CHANNEL_LAST - DAC_CHANNEL_LAST <= MIDIMAP_MAX )
+            ? frame.MIDIState.mapping[source - ADC_CHANNEL_LAST - DAC_CHANNEL_LAST - 1 ].output
+            : frame.GamepadState.mapping[source - ADC_CHANNEL_LAST - DAC_CHANNEL_LAST - MIDIMAP_MAX - 1].output;
+#else
         : frame.MIDIState.mapping[source - ADC_CHANNEL_LAST - DAC_CHANNEL_LAST - 1].output;
+#endif
   }
 
   int In(int default_value = 0) {
@@ -101,6 +107,9 @@ struct DigitalInputMap {
     CV_INPUT,
     CV_OUTPUT,
     MIDI_MAP,
+#ifdef ARDUINO_TEENSY41
+    GAMEPAD_MAP
+#endif
   };
 
   static const int ppqn = 4;
@@ -156,6 +165,10 @@ struct DigitalInputMap {
         return frame.ViewOut(cv_output_index()) > GATE_THRESHOLD;
       case MIDI_MAP:
         return frame.MIDIState.mapping[midi_map_index()].output > GATE_THRESHOLD;
+#ifdef ARDUINO_TEENSY41
+      case GAMEPAD_MAP:
+        return frame.GamepadState.mapping[gamepad_map_index()].output > GATE_THRESHOLD;
+#endif
       case NONE:
       default:
         return false;
@@ -197,6 +210,10 @@ struct DigitalInputMap {
         return PARAM_MAP_ICONS + (1 + ADC_CHANNEL_LAST + cv_output_index()) * 8;
       case MIDI_MAP:
         return PhzIcons::midiIn;
+#ifdef ARDUINO_TEENSY41
+      case GAMEPAD_MAP:
+        return PhzIcons::gamepad;
+#endif
       case NONE:
       default:
         return PARAM_MAP_ICONS + 0;
@@ -238,7 +255,14 @@ private:
         if (source < 1 + OC::DIGITAL_INPUT_LAST + ADC_CHANNEL_LAST + DAC_CHANNEL_LAST)
           return CV_OUTPUT;
 
+#ifdef ARDUINO_TEENSY41
+        if (source < 1 + OC::DIGITAL_INPUT_LAST + ADC_CHANNEL_LAST + DAC_CHANNEL_LAST + MIDIMAP_MAX)
+            return MIDI_MAP;
+
+        return GAMEPAD_MAP;
+#else
         return MIDI_MAP;
+#endif
       }
     }
   }
@@ -255,6 +279,11 @@ private:
   inline int8_t midi_map_index() const {
     return source - 1 - OC::DIGITAL_INPUT_LAST - ADC_CHANNEL_LAST - DAC_CHANNEL_LAST;
   }
+#ifdef ARDUINO_TEENSY41
+  inline int8_t gamepad_map_index() const {
+    return source - 1 - OC::DIGITAL_INPUT_LAST - ADC_CHANNEL_LAST - DAC_CHANNEL_LAST - MIDIMAP_MAX;
+  }
+#endif
 };
 
 // Let's PackingUtils know this is Packable as is.

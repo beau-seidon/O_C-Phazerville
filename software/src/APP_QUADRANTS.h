@@ -45,6 +45,11 @@
 
 #include "PhzConfig.h"
 
+#ifdef ARDUINO_TEENSY41
+#include <USBHost_t36.h>
+#include "HSGamepad.h"
+#endif
+
 // per bank file
 static constexpr int QUAD_PRESET_COUNT = 32;
 static constexpr int PRESET_FILE_REVISION = 0;
@@ -178,6 +183,8 @@ public:
         // 1024+
         // ... check AudioAppletSubapp to be sure!
 
+        GAMEPAD_MAPS_KEY = 600,
+
         VERSION_KEY = 0xFFFF // 65535
     };
 
@@ -275,6 +282,14 @@ public:
           data = PackPackables(frame.MIDIState.mapping[midx]);
           PhzConfig::setValue(MIDI_MAPS_KEY + midx, data);
         }
+
+#ifdef ARDUINO_TEENSY41
+        // Global Gamepad Maps
+        for (size_t gpx = 0; gpx < GAMEPAD_MAP_MAX; ++gpx) {
+            data = PackPackables(frame.GamepadState.mapping[gpx]);
+            PhzConfig::setValue(GAMEPAD_MAPS_KEY + gpx, data);
+        }
+#endif
 
         // User Patterns aka Sequences
         for (size_t i = 0; i < OC::Patterns::PATTERN_USER_COUNT; ++i) {
@@ -501,6 +516,9 @@ public:
         ProcessMIDI(usbMIDI, usbHostMIDI, MIDI1);
         ProcessMIDI(usbHostMIDI, usbMIDI, MIDI1);
         ProcessMIDI(MIDI1, usbMIDI, usbHostMIDI);
+#ifdef ARDUINO_TEENSY41
+        ProcessGamepad(joystick);
+#endif
     }
     void Controller() {
         // Clock Setup applet handles internal clock duties

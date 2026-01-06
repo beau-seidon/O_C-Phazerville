@@ -44,6 +44,7 @@
 #endif
 #ifdef ARDUINO_TEENSY41
 #include "hemisphere_audio_config.h"
+#include "HSGamepad.h"
 #endif
 
 // The settings specify the selected applets, and 64 bits of data for each applet,
@@ -706,14 +707,15 @@ public:
         timeout = 0;
         // top-level MIDI-to-CV handling - alters frame outputs
 #if defined(__IMXRT1062__)
-  #if defined(ARDUINO_TEENSY41)
+    #if defined(ARDUINO_TEENSY41)
         ProcessMIDI(usbMIDI, usbHostMIDI, MIDI1);
         ProcessMIDI(usbHostMIDI, usbMIDI, MIDI1);
         ProcessMIDI(MIDI1, usbMIDI, usbHostMIDI);
-  #else
+        ProcessGamepad(joystick);
+    #else
         ProcessMIDI(usbMIDI, usbHostMIDI);
         ProcessMIDI(usbHostMIDI, usbMIDI);
-  #endif
+    #endif
 #else
         ProcessMIDI(usbMIDI);
 #endif
