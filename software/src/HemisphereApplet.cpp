@@ -110,7 +110,14 @@ void HS::IOFrame::Load() {
     for (int i = 0; i < MIDIMAP_MAX; ++i) {
         MIDIMapping& m = MIDIState.mapping[i];
         if (m.trigout_countdown > 0) {
-            if (--m.trigout_countdown == 0) m.output = 0;
+            if (--m.trigout_countdown == 0) {
+                if (m.gate_retrig) {
+                    m.gate_retrig = false;
+                    m.output = PULSE_VOLTAGE * (12 << 7);
+                } else {
+                    m.output = 0;
+                }
+            }
         }
     }
 

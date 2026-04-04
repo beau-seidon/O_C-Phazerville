@@ -77,6 +77,7 @@ struct MIDIMapping : public MIDIMapSettings {
 
   // state
   int16_t trigout_countdown;
+  bool gate_retrig;
   uint16_t semitone_mask; // which notes are currently on
   int16_t output; // translated CV values
 

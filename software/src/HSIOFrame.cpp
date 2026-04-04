@@ -131,6 +131,13 @@ void HS::MIDIFrame::ProcessMIDIMsg(const MIDIMessage msg) {
                         map.ClockOut();
                         break;
 
+                    case HEM_MIDI_GATE_RT_OUT:
+                        if (map.output > 0) {
+                            map.gate_retrig = true;
+                            map.trigout_countdown = HEMISPHERE_CLOCK_TICKS * HS::trig_length;
+                            map.output = 0;
+                            break;
+                        }
                     case HEM_MIDI_GATE_OUT:
                         map.output = PULSE_VOLTAGE * (12 << 7);
                         break;
@@ -195,7 +202,7 @@ void HS::MIDIFrame::ProcessMIDIMsg(const MIDIMessage msg) {
 
                 if (!CheckSustainLatch(m_ch)) {
                     if (!(note_buffer[m_ch].size() > 0)) { // turn mono gate off, only when all notes are off
-                        if (map.function == HEM_MIDI_GATE_OUT) map.output = 0;
+                        if (map.function == HEM_MIDI_GATE_OUT || map.function == HEM_MIDI_GATE_RT_OUT) map.output = 0;
                         if (map.function == HEM_MIDI_GATE_INV_OUT) map.output = PULSE_VOLTAGE * (12 << 7);
                     }
                     if (map.function == HEM_MIDI_GATE_POLY_OUT) {
@@ -221,6 +228,7 @@ void HS::MIDIFrame::ProcessMIDIMsg(const MIDIMessage msg) {
                         if (!(note_buffer[m_ch].size() > 0)) {
                             switch (map.function) {
                                 case HEM_MIDI_GATE_OUT:
+                                case HEM_MIDI_GATE_RT_OUT:
                                 case HEM_MIDI_GATE_POLY_OUT:
                                     map.output = 0;
                                     break;
