@@ -452,7 +452,7 @@ struct MIDIFrame {
         MIDI1.sendAfterTouch(val, midi_ch + 1);
 #endif
     }
-    void SendPitchBend(const uint8_t midi_ch, uint16_t bend) {
+    void SendPitchBend(const uint8_t midi_ch, int bend) {
         usbMIDI.sendPitchBend(bend, midi_ch + 1);
 #ifdef ARDUINO_TEENSY41
         usbHostMIDI.sendPitchBend(bend, midi_ch + 1);

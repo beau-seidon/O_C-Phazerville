@@ -21,34 +21,36 @@
 
 // See https://www.pjrc.com/teensy/td_midi.html
 
-// The functions available for each output
+
 class hMIDIOut : public HemisphereApplet {
 public:
+    static constexpr int MIDI_SEND_DELAY = 16;
+
     enum MIDIOutCursor : uint8_t {
         CHANNEL, TRANSPOSE, CV2_FUNC, LEGATO,
         LOG_VIEW,
 
         MAX_CURSOR = LOG_VIEW
     };
-    enum MIDIOutMode : uint8_t {
+    enum MIDIOutMode : uint8_t {  // The functions available for each output
         NOTE,
-        AFTERTOUCH,
-        PITCHBEND,
         VELOCITY,
+        PITCHBEND,
+        AFTERTOUCH,
         CC_CONTROL,
         // values beyond here represent CC#
 
         MAX_MODE = CC_CONTROL + 127
     };
-    const char* const fn_name[5] = {"Note", "Aft", "Bend", "Veloc", "CC#"};
+    const char* const fn_name[5] = {"Note", "Veloc", "Bend", "Aft", "CC#"};
 
-    const char* applet_name() { // Maximum 10 characters
+    const char* applet_name() {  // Maximum 10 characters
         return "MIDIOut";
     }
     const uint8_t* applet_icon() { return PhzIcons::midiOut; }
 
     void Start() {
-        channel = 0; // Default channel 1
+        channel = 0;  // Default channel 1
         gated = 0;
         transpose = 0;
         legato = 1;
@@ -71,47 +73,47 @@ public:
         // lag between when a gate is read and when the CV can be read.
         if (read_gate && !gated) StartADCLag();
 
-        bool note_on = EndOfADCLag(); // If the ADC lag has ended, a note will always be sent
+        bool note_on = EndOfADCLag();  // If the ADC lag has ended, a note will always be sent
         if (functionA == NOTE) {
-          if (note_on || legato_on) {
-            // Get a new reading when gated, or when checking for legato changes
-            uint8_t midi_note = MIDIQuantizer::NoteNumber(In(0), transpose);
+            if (note_on || legato_on) {
+                // Get a new reading when gated, or when checking for legato changes
+                uint8_t midi_note = MIDIQuantizer::NoteNumber(In(0), transpose);
 
-            if (legato_on && midi_note != last_note) {
-                // Send note off if the note has changed
-                hMIDI.SendNoteOff(last_channel, last_note, 0);
-                UpdateLog(HEM_MIDI_NOTE_OFF, midi_note, 0);
-                note_on = 1;
-            }
-
-            if (note_on) {
-                int velocity = 0x64;
-                if (functionB == VELOCITY) {
-                    velocity = ProportionCV(In(1), 127, HEMISPHERE_MAX_INPUT_CV);
+                if (legato_on && midi_note != last_note) {
+                    // Send note off if the note has changed
+                    hMIDI.SendNoteOff(last_channel, last_note, 0);
+                    UpdateLog(HEM_MIDI_NOTE_OFF, midi_note, 0);
+                    note_on = 1;
                 }
-                last_velocity = velocity;
 
-                hMIDI.SendNoteOn(channel, midi_note, velocity);
-                last_note = midi_note;
-                last_channel = channel;
-                last_tick = OC::CORE::ticks;
-                if (legato) legato_on = 1;
+                if (note_on) {
+                    uint8_t velocity = 0x64;
+                    if (functionB == VELOCITY) {
+                        velocity = ProportionCV(In(1), 127, HEMISPHERE_MAX_INPUT_CV);
+                    }
 
-                UpdateLog(HEM_MIDI_NOTE_ON, midi_note, velocity);
+                    hMIDI.SendNoteOn(channel, midi_note, velocity);
+                    UpdateLog(HEM_MIDI_NOTE_ON, midi_note, velocity);
+                    last_tick = OC::CORE::ticks;
+                    last_channel = channel;
+                    last_note = midi_note;
+                    last_velocity = velocity;
+
+                    if (legato) legato_on = 1;
+                }
             }
-          }
-        } else if (Changed(0)) {
-          // CC from CV1
-          int value = ProportionCV(In(0), 127, HEMISPHERE_MAX_INPUT_CV);
-          if (value != last_cc[0]) {
-            hMIDI.SendCC(channel, functionA - CC_CONTROL, value);
-            last_cc[0] = value;
-            UpdateLog(HEM_MIDI_CC, functionA - CC_CONTROL, value);
-            last_tick = OC::CORE::ticks;
-          }
+        } else {
+            // CC from CV1
+            uint8_t cc_val = ProportionCV(In(0), 127, HEMISPHERE_MAX_INPUT_CV);
+            if (cc_val != last_cc[0]) {
+                last_cc[0] = cc_val;
+                hMIDI.SendCC(channel, functionA - CC_CONTROL, cc_val);
+                UpdateLog(HEM_MIDI_CC, functionA - CC_CONTROL, cc_val);
+                last_tick = OC::CORE::ticks;
+            }
         }
 
-        if (!read_gate && gated) { // A note off message should be sent
+        if (!read_gate && gated) {  // A note off message should be sent
             hMIDI.SendNoteOff(last_channel, last_note, 0);
             UpdateLog(HEM_MIDI_NOTE_OFF, last_note, 0);
             last_tick = OC::CORE::ticks;
@@ -121,37 +123,39 @@ public:
         if (!gated) legato_on = 0;
 
         // Handle other messages
-        if (functionB != VELOCITY && Changed(1)) {
-            // CC# such as Mod wheel
-            if (functionB >= CC_CONTROL) {
-                int value = ProportionCV(In(1), 127, HEMISPHERE_MAX_INPUT_CV);
-                if (value != last_cc[1]) {
-                    hMIDI.SendCC(channel, functionB - CC_CONTROL, value);
-                    last_cc[1] = value;
-                    UpdateLog(HEM_MIDI_CC, functionB - CC_CONTROL, value);
-                    last_tick = OC::CORE::ticks;
+        if (functionB != VELOCITY) {
+            // Pitch Bend
+            if (functionB == PITCHBEND) {
+                int bend = ProportionCV(In(1) + HEMISPHERE_3V_CV, 16383, HEMISPHERE_3V_CV * 2) - 8192;
+                bend = constrain(bend, -8192, 8191);
+                if (bend != last_bend) {
+                    last_bend = bend;
+                    if (OC::CORE::ticks - last_tick >= MIDI_SEND_DELAY) {
+                        last_tick = OC::CORE::ticks;
+                        hMIDI.SendPitchBend(channel, bend);
+                        UpdateLog(HEM_MIDI_PITCHBEND, bend, 0);
+                    }
                 }
             }
 
             // Aftertouch
             if (functionB == AFTERTOUCH) {
-                int value = ProportionCV(In(1), 127, HEMISPHERE_MAX_INPUT_CV);
-                if (value != last_at) {
-                    hMIDI.SendAfterTouch(channel, value);
-                    last_at = value;
-                    UpdateLog(HEM_MIDI_AFTERTOUCH_CHANNEL, value, 0);
+                uint8_t at_val = ProportionCV(In(1), 127, HEMISPHERE_MAX_INPUT_CV);
+                if (at_val != last_at) {
+                    last_at = at_val;
+                    hMIDI.SendAfterTouch(channel, at_val);
+                    UpdateLog(HEM_MIDI_AFTERTOUCH_CHANNEL, at_val, 0);
                     last_tick = OC::CORE::ticks;
                 }
             }
 
-            // Pitch Bend
-            if (functionB == PITCHBEND) {
-                uint16_t bend = Proportion(In(1) + HEMISPHERE_3V_CV, HEMISPHERE_3V_CV * 2, 16383);
-                bend = constrain(bend, 0, 16383);
-                if (bend != last_bend) {
-                    hMIDI.SendPitchBend(channel, bend);
-                    last_bend = bend;
-                    UpdateLog(HEM_MIDI_PITCHBEND, bend - 8192, 0);
+            // CC# such as Mod wheel
+            if (functionB >= CC_CONTROL) {
+                uint8_t cc_val = ProportionCV(In(1), 127, HEMISPHERE_MAX_INPUT_CV);
+                if (cc_val != last_cc[1]) {
+                    last_cc[1] = cc_val;
+                    hMIDI.SendCC(channel, functionB - CC_CONTROL, cc_val);
+                    UpdateLog(HEM_MIDI_CC, functionB - CC_CONTROL, cc_val);
                     last_tick = OC::CORE::ticks;
                 }
             }
@@ -165,17 +169,18 @@ public:
     }
 
     void AuxButton() {
-      if (cursor == TRANSPOSE) {
-        if (functionA == NOTE)
-          functionA = CC_CONTROL;
-        else
-          functionA = NOTE;
+        if (cursor == TRANSPOSE) {
+            if (functionA == NOTE)
+                functionA = CC_CONTROL;
+            else
+                functionA = NOTE;
 
-        CommitSettings();
-      }
+            CommitSettings();
+        }
     }
+
     void OnButtonPress() {
-        if (cursor == LEGATO && !EditMode()) { // special case to toggle legato
+        if (cursor == LEGATO && !EditMode()) {  // special case to toggle legato
             legato = !legato;
             ResetCursor();
             return;
@@ -186,87 +191,94 @@ public:
 
     // from applet to global MIDIFrame
     void CommitSettings() {
-      auto& hMIDI = HS::frame.MIDIState;
-      auto &mapA = hMIDI.outmap[io_offset + 0];
-      auto &mapB = hMIDI.outmap[io_offset + 1];
+        auto& hMIDI = HS::frame.MIDIState;
+        auto &mapA = hMIDI.outmap[io_offset + 0];
+        auto &mapB = hMIDI.outmap[io_offset + 1];
 
-      mapA.channel = channel;
+        mapA.channel = channel;
+        if (functionA == NOTE) {
+            mapA.function = HEM_MIDI_NOTE_OUT;
+            mapA.transpose = transpose;
+        } else {
+            mapA.function = HEM_MIDI_CC_OUT;
+            mapA.function_cc = functionA - CC_CONTROL;
+        }
 
-      if (functionA == NOTE) {
-        mapA.function = HEM_MIDI_NOTE_OUT;
-        mapA.transpose = transpose;
-      } else {
-        mapA.function = HEM_MIDI_CC_OUT;
-        mapA.function_cc = functionA - CC_CONTROL;
-      }
-
-      mapB.channel = channel;
-      if (functionB >= CC_CONTROL) {
-        mapB.function = HEM_MIDI_CC_OUT;
-        mapB.function_cc = functionB - CC_CONTROL;
-      } else
-        mapB.function = HEM_MIDI_GATE_OUT;
+        mapB.channel = channel;
+        if (functionB >= CC_CONTROL) {
+            mapB.function = HEM_MIDI_CC_OUT;
+            mapB.function_cc = functionB - CC_CONTROL;
+        } else {
+            switch(functionB) {
+                case VELOCITY:
+                    mapB.function = HEM_MIDI_VEL_OUT;
+                    break;
+                case PITCHBEND:
+                    mapB.function = HEM_MIDI_PB_OUT;
+                    break;
+                case AFTERTOUCH:
+                    mapB.function = HEM_MIDI_AT_CHAN_OUT;
+                    break;
+                default:
+                    break;
+            }
+        }
     }
+
     // from MIDIFrame to applet settings
     void ReloadSettings() {
-      auto &hMIDI = HS::frame.MIDIState;
-      auto &map = hMIDI.outmap[io_offset + 0];
+        auto &hMIDI = HS::frame.MIDIState;
+        auto &mapA = hMIDI.outmap[io_offset + 0];
+        auto &mapB = hMIDI.outmap[io_offset + 1];
 
-      channel = map.channel;
-      transpose = map.transpose;
-      if (map.function == HEM_MIDI_NOTE_OUT) {
-        functionA = NOTE;
-      } else
-        functionA = CC_CONTROL + map.function_cc;
+        channel = mapA.channel;
+        transpose = mapA.transpose;
+        if (mapA.function == HEM_MIDI_NOTE_OUT) {
+            functionA = NOTE;
+        } else
+            functionA = CC_CONTROL + mapA.function_cc;
 
-      switch (hMIDI.outmap[io_offset + 1].function) {
-        default:
-          break;
-        case HEM_MIDI_PB_OUT:
-          functionB = PITCHBEND;
-          break;
-        case HEM_MIDI_VEL_OUT:
-          functionB = VELOCITY;
-          break;
-        case HEM_MIDI_CC_OUT:
-          functionB = CC_CONTROL + hMIDI.outmap[io_offset + 1].function_cc;
-          break;
-        case HEM_MIDI_AT_CHAN_OUT:
-          functionB = AFTERTOUCH;
-          break;
-      }
+        switch (mapB.function) {
+            case HEM_MIDI_VEL_OUT:
+                functionB = VELOCITY;
+                break;
+            case HEM_MIDI_PB_OUT:
+                functionB = PITCHBEND;
+                break;
+            case HEM_MIDI_AT_CHAN_OUT:
+                functionB = AFTERTOUCH;
+                break;
+            case HEM_MIDI_CC_OUT:
+                functionB = CC_CONTROL + mapB.function_cc;
+                break;
+            default:
+                break;
+        }
     }
 
     void OnEncoderMove(int direction) {
-      if (!EditMode()) {
-        MoveCursor(cursor, direction, MAX_CURSOR);
-        return;
-      }
+        if (!EditMode()) {
+            MoveCursor(cursor, direction, MAX_CURSOR);
+            return;
+        }
 
-      switch (cursor) {
-        case CHANNEL:
-          channel = constrain(channel + direction, 0, 15);
-          break;
+        switch (cursor) {
+            case CHANNEL:
+                channel = constrain(channel + direction, 0, 15);
+                break;
+            case TRANSPOSE:
+                if (functionA == NOTE)
+                    transpose = constrain(transpose + direction, -48, 48);
+                else
+                    functionA = constrain(functionA + direction, CC_CONTROL, MAX_MODE);
+                break;
+            case CV2_FUNC:
+                functionB = constrain(functionB + direction, 0, MAX_MODE);
+                break;
+        }
 
-        case TRANSPOSE:
-          if (functionA == NOTE)
-            transpose = constrain(transpose + direction, -48, 48);
-          else {
-            functionA = constrain(functionA + direction, CC_CONTROL, MAX_MODE);
-          }
-          break;
-
-        case CV2_FUNC:
-          functionB = constrain(functionB + direction, 0, MAX_MODE);
-          break;
-
-        case LEGATO:
-          legato = direction > 0 ? 1 : 0;
-          break;
-      }
-
-      CommitSettings();
-      ResetCursor();
+        CommitSettings();
+        ResetCursor();
     }
 
     uint64_t OnDataRequest() {
@@ -312,22 +324,22 @@ private:
     int cursor; // MIDIOutCursor
 
     // Settings
-    uint8_t channel; // MIDI Out channel
+    uint8_t channel;                     // MIDI Out channel
     uint8_t functionA = NOTE;
-    uint8_t functionB = CC_CONTROL + 1; // Function of second CV input
-    int8_t transpose; // Semitones of transposition
-    bool legato; // New notes are sent when note is changed
+    uint8_t functionB = CC_CONTROL + 1;  // Function of second CV input
+    int8_t transpose;                    // Semitones of transposition
+    bool legato;                         // New notes are sent when note is changed
 
     // Housekeeping
-    uint8_t last_note; // Last MIDI note number awaiting note off
+    uint8_t last_note;     // Last MIDI note number awaiting note off
     uint8_t last_velocity;
-    uint8_t last_channel; // The last Note On channel, just in case the channel is changed before release
-    uint8_t last_cc[2]; // Last CC value sent
-    uint8_t last_at; // Last aftertouch sent
-    uint16_t last_bend; // Last pitch bend sent
-    bool gated; // The most recent gate status
-    bool legato_on; // The note handler may currently respond to legato note changes
-    uint32_t last_tick; // Most recent MIDI message sent
+    uint8_t last_channel;  // The last Note On channel, just in case the channel is changed before release
+    uint8_t last_cc[2];    // Last CC value sent
+    uint8_t last_at;       // Last aftertouch sent
+    int last_bend;         // Last pitch bend sent
+    bool gated;            // The most recent gate status
+    bool legato_on;        // The note handler may currently respond to legato note changes
+    uint32_t last_tick;    // Timestamp of most recent MIDI message
 
     // Logging
     MIDIMessage log[7];
@@ -358,22 +370,22 @@ private:
         gfxPrint(24, 15, channel + 1);
 
         if (functionA == NOTE) {
-          // Transpose
-          gfxPrint(1, 25, "Tr:");
-          if (transpose > -1) gfxPrint(24, 25, "+");
-          gfxPrint(30, 25, transpose);
+            // Transpose
+            gfxPrint(1, 25, "Tr:");
+            if (transpose > -1) gfxPrint(24, 25, "+");
+            gfxPrint(30, 25, transpose);
         } else {
-          gfxPrint(1, 25, "i1: CC#");
-          gfxPrint(functionA - CC_CONTROL);
+            gfxPrint(1, 25, "i1: CC#");
+            gfxPrint(functionA - CC_CONTROL);
         }
 
         // Input 2 function
         gfxPrint(1, 35, "i2:");
         if (functionB >= CC_CONTROL) {
-          gfxPrint(24, 35, fn_name[CC_CONTROL]);
-          gfxPrint(functionB - CC_CONTROL);
+            gfxPrint(24, 35, fn_name[CC_CONTROL]);
+            gfxPrint(functionB - CC_CONTROL);
         } else
-          gfxPrint(24, 35, fn_name[functionB]);
+            gfxPrint(24, 35, fn_name[functionB]);
 
         // Legato
         gfxPrint(1, 45, "Legato");
@@ -381,17 +393,17 @@ private:
 
         // Cursor
         switch (cursor) {
-          default:
-            gfxCursor(24, 23 + (cursor * 10), 33);
-            break;
-          case TRANSPOSE:
-            gfxSpicyCursor(24, 23 + (cursor * 10), 33);
-            break;
-          case LEGATO:
-            gfxIcon(46, 45, RIGHT_ICON);
-            break;
-          case LOG_VIEW:
-            break;
+            case TRANSPOSE:
+                gfxSpicyCursor(24, 23 + (cursor * 10), 33);
+                break;
+            case LEGATO:
+                gfxIcon(46, 45, RIGHT_ICON);
+                break;
+            case LOG_VIEW:
+                break;
+            default:
+                gfxCursor(24, 23 + (cursor * 10), 33);
+                break;
         }
 
         // Last note log
@@ -412,34 +424,34 @@ private:
     }
 
     void log_entry(int y, int index) {
-      switch (log[index].message) {
-        case HEM_MIDI_NOTE_ON:
-          gfxIcon(1, y, NOTE_ICON);
-          gfxPrint(10, y, midi_note_numbers[log[index].data1]);
-          gfxPrint(40, y, log[index].data2);
-          break;
+        switch (log[index].message) {
+            case HEM_MIDI_NOTE_ON:
+                gfxIcon(1, y, NOTE_ICON);
+                gfxPrint(10, y, midi_note_numbers[log[index].data1]);
+                gfxPrint(40, y, log[index].data2);
+                break;
 
-        case HEM_MIDI_NOTE_OFF:
-          gfxPrint(1, y, "-");
-          gfxPrint(10, y, midi_note_numbers[log[index].data1]);
-          break;
+            case HEM_MIDI_NOTE_OFF:
+                gfxPrint(1, y, "-");
+                gfxPrint(10, y, midi_note_numbers[log[index].data1]);
+                break;
 
-        case HEM_MIDI_CC:
-          gfxIcon(1, y, MOD_ICON);
-          gfxPrint(10, y, log[index].data1);
-          gfxPrint(40, y, log[index].data2);
-          break;
+            case HEM_MIDI_CC:
+                gfxIcon(1, y, MOD_ICON);
+                gfxPrint(10, y, log[index].data1);
+                gfxPrint(40, y, log[index].data2);
+                break;
 
-        case HEM_MIDI_AFTERTOUCH_CHANNEL:
-          gfxIcon(1, y, AFTERTOUCH_ICON);
-          gfxPrint(10, y, log[index].data1);
-          break;
+            case HEM_MIDI_AFTERTOUCH_CHANNEL:
+                gfxIcon(1, y, AFTERTOUCH_ICON);
+                gfxPrint(10, y, log[index].data1);
+                break;
 
-        case HEM_MIDI_PITCHBEND:
-          gfxIcon(1, y, BEND_ICON);
-          gfxPrint(10, y, log[index].data1);
-          break;
-      }
+            case HEM_MIDI_PITCHBEND:
+                gfxIcon(1, y, BEND_ICON);
+                gfxPrint(10, y, log[index].data1);
+                break;
+        }
     }
 };
 
