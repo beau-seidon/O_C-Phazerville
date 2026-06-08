@@ -16,9 +16,17 @@ namespace OC {
     AudioPassthrough<2> output_route;
 #ifdef AUDIO_INTERFACE
     AudioInputUSB input_usb;
+    AudioMixer<2> usbmix[2];
     AudioOutputUSB output_usb;
     AudioConnection out_conn_usbL{output_route, 0, output_usb, 0};
     AudioConnection out_conn_usbR{output_route, 1, output_usb, 1};
+    AudioConnection out_conn_usbL2{input_stream, 0, output_usb, 2};
+    AudioConnection out_conn_usbR2{input_stream, 1, output_usb, 3};
+
+    AudioConnection in_conn_usbL{input_usb, 2, usbmix[0], 0};
+    AudioConnection in_conn_usbR{input_usb, 3, usbmix[1], 0};
+    AudioConnection in_conn_mixL{output_route, 0, usbmix[0], 1};
+    AudioConnection in_conn_mixR{output_route, 1, usbmix[1], 1};
 #endif
 
     AudioConnection out_conn[2];
@@ -43,8 +51,17 @@ namespace OC {
       // fix for now.
       if (output_stream == nullptr) {
         output_stream = new AudioOutputI2S2();
+#ifdef AUDIO_INTERFACE
+        out_conn[0].connect(usbmix[0], 0, *output_stream, 0);
+        out_conn[1].connect(usbmix[1], 0, *output_stream, 1);
+        usbmix[0].gain(0, 1.0f);
+        usbmix[0].gain(1, 1.0f);
+        usbmix[1].gain(0, 1.0f);
+        usbmix[1].gain(1, 1.0f);
+#else
         out_conn[0].connect(output_route, 0, *output_stream, 0);
         out_conn[1].connect(output_route, 1, *output_stream, 1);
+#endif
       }
       return output_route;
     }
