@@ -19,7 +19,7 @@
 #include "OC_strings.h"
 #include "OC_ui.h"
 #include "OC_options.h"
-#include "HSicons.h"
+#include "icons.h"
 #include "src/drivers/display.h"
 #include "src/drivers/ADC/OC_util_ADC.h"
 #include "util/util_debugpins.h"

@@ -35,7 +35,7 @@
 
 #include "HemisphereApplet.h"
 #include "HSApplication.h"
-#include "HSicons.h"
+#include "icons.h"
 #include "HSMIDI.h"
 #include "HSClockManager.h"
 

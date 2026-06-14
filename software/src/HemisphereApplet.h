@@ -39,7 +39,7 @@
 #include "src/drivers/FreqMeasure/OC_FreqMeasure.h"
 #include "util/util_math.h"
 #include "src/extern/bjorklund.h"
-#include "HSicons.h"
+#include "icons.h"
 #include "HSClockManager.h"
 
 #include "HSUtils.h"

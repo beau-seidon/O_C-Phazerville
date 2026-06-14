@@ -125,7 +125,7 @@ public:
     int dec = shiftedFreq % 10;
     if (int_part > 9999) graphics.printf("%6d", int_part);
     else graphics.printf("%4d.%01d", int_part, dec);
-    gfxPrintIcon(HZ);
+    gfxPrintIcon(HZ_ICON);
   }
 
   void gfxPrintDb(int db) {

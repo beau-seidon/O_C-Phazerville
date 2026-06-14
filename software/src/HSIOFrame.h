@@ -17,7 +17,7 @@
 #include "OC_DAC.h"
 #include "OC_ADC.h"
 #include "OC_digital_inputs.h"
-#include "HSicons.h"
+#include "icons.h"
 #include "HSClockManager.h"
 #include "util/util_macros.h"
 #include "util/clkdivmult.h"

@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include "HSicons.h"
+#include "icons.h"
 #include "OC_ADC.h"
 #include "OC_digital_inputs.h"
 #include "OC_app_switcher.h"

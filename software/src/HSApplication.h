@@ -33,7 +33,7 @@
 using simfloat = int32_t;
 #endif
 
-#include "HSicons.h"
+#include "icons.h"
 #include "HSClockManager.h"
 #include "HemisphereApplet.h"
 #include "HSUtils.h"
