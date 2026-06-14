@@ -1909,8 +1909,9 @@ void AppQuadrants::HandleButtonEvent(const UI::Event &event) {
         } else if (event.control == OC::CONTROL_BUTTON_B) {
           mview = constrain(mview + 1, 0, MIDIMAP_MAX-1);
           config_cursor = MIDIMAP1 + mview;
+        } else if (event.control == OC::CONTROL_BUTTON_Z) {
+          frame.MIDIState.mapping[mview].AutoLearn();
         } else {
-          // TODO: auto-learn from Z button
           HS::midi_edit = 0;
           HS::popup_tick = 0;
           select_mode = -1;

@@ -11,6 +11,7 @@ const int HS::MIDIMapping::ViewOut() const {
 // arguments are raw data from MIDI system, so channel starts at 1 (not 0)
 void HS::MIDIFrame::ProcessMIDIMsg(const MIDIMessage msg) {
     const uint8_t m_ch = msg.channel - 1;
+    last_midi_channel = m_ch;
 
     switch (msg.message) { // System Real Time messages
         case usbMIDI.Clock:
@@ -70,26 +71,12 @@ void HS::MIDIFrame::ProcessMIDIMsg(const MIDIMessage msg) {
             break;
     }
 
-    bool log_skip = false;
-    uint8_t m_ch_prev = 255; // initialize to invalid channel
-
+    bool log_this = false;
     for (MIDIMapping& map : mapping) {
-        if (!map.enabled()) continue;
-
-        // skip unwanted MIDI Channels
-        if (map.get_channel() != m_ch && map.get_channel() != 16) continue;
-
-        last_midi_channel = m_ch;
-
-        // prevent duplicate log entries
-        if (m_ch == m_ch_prev) log_skip = true;
-        else log_skip = false;
-        m_ch_prev = m_ch;
-
-        bool log_this = map.ProcessMsg(msg, *this) && !log_skip;
-
-        if (log_this) UpdateLog(msg);
+      if (map.ProcessMsg(msg, *this))
+        log_this = true;
     }
+    if (log_this) UpdateLog(msg);
 }
 
 bool HS::MIDIMapping::ProcessMsg(const MIDIMessage msg, HS::MIDIFrame &state) {
@@ -99,7 +86,11 @@ bool HS::MIDIMapping::ProcessMsg(const MIDIMessage msg, HS::MIDIFrame &state) {
   if (learning()) {
     switch (msg.message) {
       case usbMIDI.NoteOn:
-        if (!enabled()) function = PITCH;
+        if (!enabled()) {
+          function = PITCH;
+          range_low = 127;
+          range_high = 0;
+        }
         if (enabled() && IsPitch()) {
           // focused pitch range capture
           // todo: set range based on polyphony, or alternate learn modes
@@ -125,6 +116,9 @@ bool HS::MIDIMapping::ProcessMsg(const MIDIMessage msg, HS::MIDIFrame &state) {
   }
 
   if (!enabled()) return false;
+  // skip unwanted MIDI Channels
+  if (get_channel() != m_ch && get_channel() != 16)
+    return false;
 
   NoteBuffer &buf = state.note_buffer[m_ch];
   bool log_this = false;
@@ -217,7 +211,7 @@ bool HS::MIDIMapping::ProcessMsg(const MIDIMessage msg, HS::MIDIFrame &state) {
         semitone_mask = semitone_mask & ~(1u << (msg.data1 % 12));
 
         // this is here instead of up top because of the mask update
-        if (learning() && semitone_mask == 0) {
+        if (learning() && IsPitch() && semitone_mask == 0) {
           SetPitch(NOTE_MONO);
         }
 

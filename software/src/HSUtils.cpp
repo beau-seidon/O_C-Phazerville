@@ -463,8 +463,8 @@ namespace HS {
         break;
       case MIDI_POPUP:
       case QUANTIZER_POPUP:
-        px = 20; py = 23;
-        pw = 88; ph = 28;
+        px = 14; py = 23;
+        pw = 100; ph = 28;
         break;
       case MESSAGE_POPUP:
         pw = 6 * strlen(popup_msg) + 10;

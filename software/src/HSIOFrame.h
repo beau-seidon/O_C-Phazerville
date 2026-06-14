@@ -377,7 +377,7 @@ struct MIDIMapping : protected MIDIMapSettings {
 
   void AutoLearn() {
     channel = 16; // omni
-    //function = NONE;
+    function = NONE;
     function_cc = -1; // auto-learn MIDI CC or precise NoteOn
   }
 

@@ -35,7 +35,7 @@ public:
 
   void AutoLearn() {
     if (source_type() == TYPE_MIDI) {
-      frame.MIDIState.mapping[source - ADC_CHANNEL_COUNT - DAC_CHANNEL_COUNT - 1].AutoLearn();
+      frame.MIDIState.mapping[index()].AutoLearn();
     }
   }
 
