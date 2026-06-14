@@ -33,7 +33,7 @@
 namespace OC {
 
 // Output value types
-enum OutputMode {
+enum OutputMode : uint8_t {
   OUTPUT_MODE_PITCH,
   OUTPUT_MODE_GATE,
   OUTPUT_MODE_UNI,

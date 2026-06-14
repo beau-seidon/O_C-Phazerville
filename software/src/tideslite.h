@@ -204,8 +204,8 @@ constexpr int16_t ComputePitch(uint32_t phase_increment) {
   return pitch;
 }
 
-const uint32_t max_16 = 0xffff;
-const uint32_t max_8 = 0xff;
+static constexpr uint32_t max_16 = 0xffff;
+static constexpr uint32_t max_8 = 0xff;
 
 uint32_t WarpPhase(uint16_t phase, uint16_t curve);
 

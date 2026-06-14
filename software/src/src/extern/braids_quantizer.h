@@ -44,7 +44,7 @@ struct Scale {
   int16_t notes[16];
 };
 
-enum OctaveConstraint {
+enum OctaveConstraint : uint8_t {
   OCTAVE_CONSTRAINT_OFF,
   OCTAVE_CONSTRAINT_UP,
   OCTAVE_CONSTRAINT_DOWN,
@@ -107,12 +107,11 @@ class Quantizer {
   int32_t next_boundary_;
   int32_t span_;
   int16_t notes_[16];
+  uint16_t note_number_;
   uint8_t num_notes_;
   uint8_t octave_constraint_;
-  int octave_constraint_min_;
-  int octave_constraint_max_;
-
-  uint16_t note_number_;
+  int8_t octave_constraint_min_;
+  int8_t octave_constraint_max_;
   bool requantize_;
 
   DISALLOW_COPY_AND_ASSIGN(Quantizer);

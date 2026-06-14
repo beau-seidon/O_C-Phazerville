@@ -15,7 +15,7 @@ struct CVInputMap {
     TYPE_INTERNAL = (7 << 5), // for noise, LFOs, S&H, etc.
   };
 
-  const SourceType ordered_types[5] = {
+  static constexpr SourceType ordered_types[5] = {
     TYPE_NONE,
     TYPE_ADC,
     TYPE_DAC,
@@ -251,7 +251,7 @@ struct DigitalInputMap {
     TYPE_INTERNAL = (7 << 5), // -1 and -2 fall here
   };
 
-  const DigitalSourceType ordered_types[6] = {
+  static constexpr DigitalSourceType ordered_types[6] = {
     TYPE_NONE,
     TYPE_DIGITAL_INPUT,
     TYPE_ADC,

@@ -60,6 +60,7 @@ struct MIDINoteData {
     uint8_t note; // data1
     uint8_t vel;  // data2
 };
+// TODO: use static array instead of vector
 using NoteBuffer = std::vector<MIDINoteData>;
 
 struct PolyphonyData {
@@ -155,8 +156,8 @@ struct MIDIMapping : protected MIDIMapSettings {
   static constexpr size_t Size = 64; // Make this compatible with Packable
 
   // state
-  int16_t trigout_countdown;
   bool gate_retrig;
+  int16_t trigout_countdown;
   uint16_t semitone_mask; // which notes are currently on
   int16_t output; // translated CV values
   int16_t pitch_bend = 0;
@@ -337,7 +338,7 @@ struct MIDIMapping : protected MIDIMapSettings {
     channel = constrain(channel + dir, 0, 16); // 16 = omni
   }
 
-  const Type ordered_types[6] = {
+  static constexpr Type ordered_types[6] = {
     NONE, PITCH, GATE, TRIGGER, MODULATOR, CCONTROL
   };
   bool AdjustType(int dir) {
@@ -446,14 +447,15 @@ constexpr MIDIMapping& pack(MIDIMapping& input) {
   return input;
 }
 
-struct MIDIFrame {
+struct alignas(32) MIDIFrame {
     MIDIMapping mapping[MIDIMAP_MAX];
     MIDIMapping outmap[ADC_CHANNEL_COUNT];
 
-    // MIDI input stuff handled by MIDIIn applet
-    NoteBuffer note_buffer[16]; // array of buffers to track all held notes on all channels
-    uint8_t last_midi_channel = 0; // for MIDI In activity monitor
+    uint32_t last_msg_tick; // Tick of last received message
     uint16_t sustain_latch; // each bit is a MIDI channel's sustain state
+    uint16_t midi_channel_filter = 0; // each bit state represents a channel. 1 means enabled. all 0's means Omni (no channel filter)
+
+    uint8_t last_midi_channel = 0; // for MIDI In activity monitor
 
     uint8_t pc_channel = 0; // program change channel filter, used for preset selection
     uint8_t bend_range = 12; // in semitones, for pitch bend
@@ -461,9 +463,8 @@ struct MIDIFrame {
 
     PolyphonyData poly_buffer[DAC_CHANNEL_COUNT]; // buffer for polyphonic data tracking
     uint8_t max_voice = 1;
-    int poly_mode = 0;
+    uint8_t poly_mode = 0;
     int8_t poly_rotate_index = -1;
-    uint16_t midi_channel_filter = 0; // each bit state represents a channel. 1 means enabled. all 0's means Omni (no channel filter)
     bool any_channel_omni = false;
 
     // Clock/Start/Stop are handled by ClockSetup applet
@@ -472,7 +473,8 @@ struct MIDIFrame {
     bool start_q;
     bool stop_q;
     uint8_t clock_count; // MIDI clock counter (24ppqn)
-    uint32_t last_msg_tick; // Tick of last received message
+
+    NoteBuffer note_buffer[16]; // array of buffers to track all held notes on all channels
 
     void Init() {
       // TODO: populate with some sensible defaults
@@ -785,19 +787,14 @@ struct MIDIFrame {
 // shared IO Frame, updated every tick
 // this will allow chaining applets together, multiple stages of processing
 struct IOFrame {
+    MIDIFrame MIDIState; /* MIDI message queue/cache */
+    OC::IOFrame* current_ioframe;
+
     // settings
-    bool autoMIDIOut = false;
-    bool synctrig = false;
     uint8_t clockinskip[IO_CHANNEL_COUNT];
     uint8_t clockoutskip[IO_CHANNEL_COUNT];
     int8_t output_slew[IO_CHANNEL_COUNT];
     int8_t output_atten[IO_CHANNEL_COUNT]; // -126 (-200%) to 126 (+200%), 63 is 100%
-
-    // pre-calculated clocks, subject to trigger mapping
-    bool clocked[OC::DIGITAL_INPUT_LAST + IO_CHANNEL_COUNT];
-
-    // physical input state cache
-    bool gate_high[OC::DIGITAL_INPUT_LAST + IO_CHANNEL_COUNT];
 
     // output value cache, countdowns
     SlewedValue outputs[IO_CHANNEL_COUNT]; // now with Extra Precision!
@@ -806,13 +803,17 @@ struct IOFrame {
     // calculated values
     uint32_t last_clock[IO_CHANNEL_COUNT]; // Tick number of the last clock observed by the child class
     uint32_t cycle_ticks[IO_CHANNEL_COUNT]; // Number of ticks between last two clocks
-    bool changed_cv[IO_CHANNEL_COUNT]; // Has the input changed by more than 1/8 semitone since the last read?
     int last_cv[IO_CHANNEL_COUNT]; // For change detection
 
-    /* MIDI message queue/cache */
-    MIDIFrame MIDIState;
+    // pre-calculated clocks, subject to trigger mapping
+    bool clocked[OC::DIGITAL_INPUT_LAST + IO_CHANNEL_COUNT];
+    // physical input state cache
+    bool gate_high[OC::DIGITAL_INPUT_LAST + IO_CHANNEL_COUNT];
 
-    OC::IOFrame* current_ioframe;
+    bool changed_cv[IO_CHANNEL_COUNT]; // Has the input changed by more than 1/8 semitone since the last read?
+    bool autoMIDIOut = false;
+    bool synctrig = false;
+
     OC::IOFrame* GetLatestIOFrame() const {
       return current_ioframe;
     }
