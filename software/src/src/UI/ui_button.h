@@ -63,8 +63,8 @@ public:
   }
 
 private:
-  int pin_;
-  uint8_t state_;
+  int pin_ = 0xff;
+  uint8_t state_ = 0xff;
 
   DISALLOW_COPY_AND_ASSIGN(Button);
 };

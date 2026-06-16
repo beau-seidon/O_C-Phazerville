@@ -136,16 +136,16 @@ public:
 
 private:
 
-  uint32_t ticks_;
-  uint32_t screensaver_timeout_;
+  uint32_t ticks_ = 0;
+  uint32_t screensaver_timeout_ = 120;
 
   UI::Button buttons_[CONTROL_BUTTON_LAST];
   uint32_t button_press_time_[CONTROL_BUTTON_LAST];
-  uint16_t button_state_;
-  uint16_t button_ignore_mask_;
-  bool screensaver_;
-  bool preempt_screensaver_;
-  bool jump_to_menu_;
+  uint16_t button_state_ = 0;
+  uint16_t button_ignore_mask_ = 0;
+  bool screensaver_ = 0;
+  bool preempt_screensaver_ = 0;
+  bool jump_to_menu_ = 0;
 
   /* Reverse the left and right encoders if Hemisphere Suite is installed on the left-hand
    * side of a Northern Light 2OC 4U module.

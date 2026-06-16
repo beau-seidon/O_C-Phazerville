@@ -142,12 +142,12 @@ struct MIDIMapSettings {
     return 0;
   }
 
-  int8_t function_cc; // CC#, or index of other subtypes
-  uint8_t function; // which type of message
-  uint8_t channel; // MIDI channel number
-  uint8_t dac_polyvoice; // select which voice to send from output
-  int8_t transpose;
-  uint8_t range_low, range_high;
+  int8_t function_cc = 0; // CC#, or index of other subtypes
+  uint8_t function = NONE; // which type of message
+  uint8_t channel = 0; // MIDI channel number
+  uint8_t dac_polyvoice = 0; // select which voice to send from output
+  int8_t transpose = 0;
+  uint8_t range_low = 0, range_high = 127;
 };
 struct MIDIMapping : protected MIDIMapSettings {
   MIDIMapping() {}
@@ -156,10 +156,10 @@ struct MIDIMapping : protected MIDIMapSettings {
   static constexpr size_t Size = 64; // Make this compatible with Packable
 
   // state
-  bool gate_retrig;
-  int16_t trigout_countdown;
-  uint16_t semitone_mask; // which notes are currently on
-  int16_t output; // translated CV values
+  bool gate_retrig = false;
+  int16_t trigout_countdown = 0;
+  uint16_t semitone_mask = 0; // which notes are currently on
+  int16_t output = 0; // translated CV values
   int16_t pitch_bend = 0;
 
   // functions

@@ -72,7 +72,7 @@ public:
   void drawVLinePattern(coord_t x, coord_t y, coord_t h, uint8_t pattern);
   void drawHLinePattern(coord_t x, coord_t y, coord_t w, uint8_t skip);
 
-  void drawLine(coord_t x1, coord_t y1, coord_t x2, coord_t y2, const uint8_t p = 1);
+  void drawLine(coord_t x0, coord_t y0, coord_t x1, coord_t y1, const uint8_t p = 1);
 
   void drawBitmap8(coord_t x, coord_t y, coord_t w, const uint8_t *data);
   void writeBitmap8(coord_t x, coord_t y, coord_t w, const uint8_t *data);

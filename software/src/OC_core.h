@@ -43,7 +43,7 @@ namespace OC {
       last_ticks = CORE::ticks;
     }
 
-    uint32_t last_ticks;
+    uint32_t last_ticks = 0;
   };
 }; // namespace OC
 

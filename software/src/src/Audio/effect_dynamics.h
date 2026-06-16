@@ -58,14 +58,19 @@ public:
 		limitdb = MIN_DB;
 	}
 
-	void Acquire() {
-		samplesSquared = new uint32_t[sampleBufferSize];
-		std::fill_n(samplesSquared, sampleBufferSize, 0);
-	}
+    void Acquire() {
+      if (!samplesSquared) {
+        samplesSquared = new uint32_t[sampleBufferSize];
+        std::fill_n(samplesSquared, sampleBufferSize, 0);
+      }
+    }
 
-	void Release() {
-		delete[] samplesSquared;
-	}
+    void Release() {
+      if (samplesSquared) {
+        delete[] samplesSquared;
+        samplesSquared = nullptr;
+      }
+    }
 
 	//Sets the gate parameters.
 	//threshold is in dbFS

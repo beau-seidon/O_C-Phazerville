@@ -162,37 +162,37 @@ private:
     /**
      *  Variables
      */
-    uint64_t running_sum;
-    uint16_t tau_global;
-    uint64_t  yin_buffer[5];
-    uint64_t  rs_buffer[5];
+    uint64_t running_sum = 0;
+    uint16_t tau_global = 0;
+    uint64_t  yin_buffer[5] = {0};
+    uint64_t  rs_buffer[5] = {0};
     // comment out old definition for now to test new way
     //    int16_t  AudioBuffer[AUDIO_GUITARTUNER_BLOCKS*128] __attribute__ ( ( aligned ( 4 ) ) );
     // heap-managed buffer so it can be freed on end()/Unload()
     int16_t *AudioBuffer = nullptr;
-    uint8_t  yin_idx, state;
-    float    periodicity, yin_threshold, data;
-    bool     enabled, next_buffer, first_run;
-    volatile bool new_output, process_buffer;
+    uint8_t  yin_idx = 0, state = 0;
+    float    periodicity = 0.0, yin_threshold = 0.0, data = 0.0;
+    bool     enabled = 0, next_buffer = 0, first_run = 0;
+    volatile bool new_output = 0, process_buffer = 0;
     audio_block_t *blocklist1[AUDIO_GUITARTUNER_BLOCKS];
     audio_block_t *blocklist2[AUDIO_GUITARTUNER_BLOCKS];
     audio_block_t *inputQueueArray[1];
 
     //custom params for optimizing YIN
-    uint16_t needed_blocks;     // how many 128-sample blocks our window needs
-    uint16_t window_samples;    // number of samples our analysis uses
-    uint16_t half_window_samples; // half the number of samples for processing
-    uint16_t HALF_BLOCKS;       // redefinition of constant, to accomodate sliding window algo
+    uint16_t needed_blocks = 0;     // how many 128-sample blocks our window needs
+    uint16_t window_samples = 0;    // number of samples our analysis uses
+    uint16_t half_window_samples = 0; // half the number of samples for processing
+    uint16_t HALF_BLOCKS = 0;       // redefinition of constant, to accomodate sliding window algo
 
     // one-pole low-pass params (simple, cheap smoothing)
-    float lpf_alpha;   // default smoothing coefficient (0..1)
-    float lpf_state;     // persistent filter state across samples/blocks
-    float lpf_cutoff;    // low-pass filter cutoff frequency modifiable by user
+    float lpf_alpha = 0.0;   // default smoothing coefficient (0..1)
+    float lpf_state = 0.0;     // persistent filter state across samples/blocks
+    float lpf_cutoff = 0.0;    // low-pass filter cutoff frequency modifiable by user
     bool lpf_initiated = false; // initialize LPF state on first use to avoid a startup step
 
     // delay calculation params
-    uint32_t first_block_time_us;
-    uint32_t last_buffer_latency_us; // can read via debugger/Serial if needed
+    uint32_t first_block_time_us = 0;
+    uint32_t last_buffer_latency_us = 0; // can read via debugger/Serial if needed
 
     // --- confidence/holding & smoothing state ---
     float sm_logf = NAN;           // log2 smoothing state (initialized lazy)

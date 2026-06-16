@@ -100,19 +100,19 @@ class Quantizer {
   int16_t ConstrainOctave(int16_t octave) const;
 
  private:
-  bool enabled_;
-  int32_t codeword_;
-  int32_t transpose_;
-  int32_t previous_boundary_;
-  int32_t next_boundary_;
-  int32_t span_;
-  int16_t notes_[16];
-  uint16_t note_number_;
-  uint8_t num_notes_;
-  uint8_t octave_constraint_;
-  int8_t octave_constraint_min_;
-  int8_t octave_constraint_max_;
-  bool requantize_;
+  bool enabled_ = false;
+  int32_t codeword_ = 0;
+  int32_t transpose_ = 0;
+  int32_t previous_boundary_ = 0;
+  int32_t next_boundary_ = 0;
+  int32_t span_ = 0;
+  int16_t notes_[16] = {0};
+  uint16_t note_number_ = 0;
+  uint8_t num_notes_ = 0;
+  uint8_t octave_constraint_ = 0;
+  int8_t octave_constraint_min_ = 0;
+  int8_t octave_constraint_max_ = 0;
+  bool requantize_ = 0;
 
   DISALLOW_COPY_AND_ASSIGN(Quantizer);
 };

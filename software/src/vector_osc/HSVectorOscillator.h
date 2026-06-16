@@ -36,8 +36,8 @@ const uint8_t VO_MAX_SEGMENTS = 12; // The maximum number of segments in a wavef
  *
  */
 struct VOSegment {
-    uint8_t level;
-    uint8_t time;
+    uint8_t level = 0;
+    uint8_t time = 0;
 
     bool IsTOC() {return (time == 0xff && level > 0);}
     void SetTOC(uint8_t segments) {
@@ -191,7 +191,7 @@ private:
     int16_t segment_start_level = 0; // Needed for when sustain ends before reaching penultimate stage
     uint8_t segment_index = 0; // Which segment the Oscillator is currently traversing
     uint8_t segment_time = 0; // Start time of current segment (out of total_time)
-    uint16_t scale; // The maximum (and minimum negative) output for this Oscillator
+    uint16_t scale = 0; // The maximum (and minimum negative) output for this Oscillator
     int16_t offset = 0; // Amount added to each voltage output (e.g., to make it unipolar)
 
     /*

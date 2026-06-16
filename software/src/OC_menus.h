@@ -73,11 +73,9 @@ public:
   ~ScreenCursor() { }
 
   void Init(int start, int end) {
-    editing_ = false;
     start_ = start;
     end_ = end;
     cursor_pos_ = start;
-    screen_line_ = 0;
   }
 
   void AdjustEnd(int end) {
@@ -144,11 +142,11 @@ public:
   }
 
 private:
-  bool editing_;
+  bool editing_ = false;
 
-  int start_, end_;
-  int cursor_pos_;
-  int screen_line_;
+  int start_ = 0, end_ = 0;
+  int cursor_pos_ = 0;
+  int screen_line_ = 0;
 };
 
 void DrawEditIcon(weegfx::coord_t x, weegfx::coord_t y, int value, int min_value, int max_value);
@@ -290,9 +288,9 @@ using QuadTitleBar = TitleBar<kDefaultMenuStartX, 4, 6>;
 // The value column is assumed to end at kDisplayWidth
 //
 struct SettingsListItem {
-  bool selected, editing;
-  weegfx::coord_t x, y;
-  weegfx::coord_t valuex, endx;
+  bool selected = false, editing = false;
+  weegfx::coord_t x = 0, y = 0;
+  weegfx::coord_t valuex = 0, endx = 0;
 
   SettingsListItem() { }
   ~SettingsListItem() { }

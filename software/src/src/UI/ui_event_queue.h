@@ -78,7 +78,7 @@ public:
 private:
 
   util::RingBuffer<Event, size> events_;
-  uint32_t last_event_time_;
+  uint32_t last_event_time_ = 0;
 };
 
 }; // namespace UI

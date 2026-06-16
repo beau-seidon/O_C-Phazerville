@@ -140,8 +140,8 @@ public:
 private:
     Segment segment[7];
     uint8_t size;
-    uint8_t x_pos;
-    uint8_t y_pos;
+    uint8_t x_pos = 0;
+    uint8_t y_pos = 0;
 
     uint8_t DigitWidth() {
         return (size == SegmentSize::BIG_SEGMENTS ? 10 : 4);

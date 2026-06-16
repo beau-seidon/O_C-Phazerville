@@ -136,17 +136,17 @@ namespace HS {
   };
 
   struct QuantEngineSettings {
-    int16_t scale; // = OC::Scales::SCALE_SEMI;
-    int8_t root_note;
-    int8_t octave;
-    uint16_t mask; // = 0xffff;
+    int16_t scale = OC::Scales::SCALE_SEMI;
+    int8_t root_note = 0;
+    int8_t octave = 0;
+    uint16_t mask = 0xffff;
   };
   struct QuantEngine : public QuantEngineSettings {
     braids::Quantizer quantizer;
 
     QuantEngine() {
-      scale = OC::Scales::SCALE_SEMI;
-      mask = 0xffff;
+      // scale = OC::Scales::SCALE_SEMI;
+      // mask = 0xffff;
       quantizer.Init();
       Reconfig();
     }

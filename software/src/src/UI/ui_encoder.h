@@ -144,11 +144,11 @@ public:
   }
 
 private:
-  bool acceleration_enabled_;
-  bool reversed_;
-  int32_t last_dir_;
-  int32_t acceleration_;
-  uint8_t pin_state_[2];
+  bool acceleration_enabled_ = acceleration_enabled;
+  bool reversed_ = false;
+  int32_t last_dir_ = 0;
+  int32_t acceleration_ = 0;
+  uint8_t pin_state_[2] = {0xff, 0xff};
 
   DISALLOW_COPY_AND_ASSIGN(Encoder);
 };
