@@ -16,9 +16,7 @@ using namespace HS;
 #include "ADEG.h"
 #include "ASR.h"
 #include "AttenuateOffset.h"
-#ifdef PEWPEWPEW
 #include "Binary.h"
-#endif
 #include "BootsNCat.h"
 #include "Brancher.h"
 #include "BugCrack.h"
@@ -32,9 +30,7 @@ using namespace HS;
 #include "TruthCat4.h"
 #include "Calibr8.h"
 #include "Carpeggio.h"
-#ifdef PEWPEWPEW
 #include "Chordinator.h"
-#endif
 #include "ClockDivider.h"
 #include "ClkToGate.h"
 #ifdef ARDUINO_TEENSY41
@@ -92,9 +88,7 @@ using namespace HS;
 #include "Relabi.h"
 #include "ResetClock.h"
 #include "RndWalk.h"
-#ifdef PEWPEWPEW
 #include "RunglBook.h"
-#endif
 #include "ScaleDuet.h"
 #include "Schmitt.h"
 #include "Scope.h"
@@ -115,9 +109,7 @@ using namespace HS;
 #include "SwitchSeq.h"
 #include "TB3PO.h"
 #include "TLNeuron.h"
-#ifdef PEWPEWPEW
 #include "Trending.h"
-#endif
 #include "TrigSeq.h"
 #include "TrigSeq16.h"
 #include "Tuner.h"
@@ -145,9 +137,7 @@ constexpr Registry reg = Registry<HemisphereApplet, HS::APPLET_SLOTS
     , DeclareApplet<ADEG, 34, CAT_MODULATOR>
     , DeclareApplet<MiniASR, 47, CAT_MODULATOR | CAT_QUANTIZER>
     , DeclareApplet<AttenuateOffset, 56, CAT_UTILITY>
-#ifdef PEWPEWPEW
     , DeclareApplet<Binary, 41, CAT_LOGIC | CAT_MODULATOR>
-#endif
     , DeclareApplet<BitBeat, 79, CAT_MODULATOR>
     , DeclareApplet<BootsNCat, 55, CAT_OTHER>
     , DeclareApplet<Brancher, 4, CAT_UTILITY | CAT_CLOCKING>
@@ -157,9 +147,7 @@ constexpr Registry reg = Registry<HemisphereApplet, HS::APPLET_SLOTS
     , DeclareApplet<Calculate, 12, CAT_UTILITY>
     , DeclareApplet<Calibr8, 88, CAT_UTILITY>
     , DeclareApplet<Carpeggio, 32, CAT_SEQUENCER | CAT_QUANTIZER>
-#ifdef PEWPEWPEW
     , DeclareApplet<Chordinator, 64, CAT_QUANTIZER>
-#endif
     , DeclareApplet<ClockDivider, 6, CAT_CLOCKING>
     , DeclareApplet<ClkToGate, 78, CAT_CLOCKING>
     , DeclareApplet<ClockSkip, 28, CAT_CLOCKING>
@@ -196,9 +184,7 @@ constexpr Registry reg = Registry<HemisphereApplet, HS::APPLET_SLOTS
     , DeclareApplet<GameOfLife, 22, CAT_MODULATOR>
 #endif
     , DeclareApplet<GateDelay, 29, CAT_CLOCKING>
-#ifdef PEWPEWPEW
     , DeclareApplet<GatedVCA, 17, CAT_UTILITY | CAT_LOGIC>
-#endif
     , DeclareApplet<Logic, 10, CAT_LOGIC | CAT_CLOCKING>
     , DeclareApplet<LowerRenz, 21, CAT_MODULATOR>
     , DeclareApplet<Metronome, 50, CAT_CLOCKING>
@@ -221,9 +207,7 @@ constexpr Registry reg = Registry<HemisphereApplet, HS::APPLET_SLOTS
     , DeclareApplet<Relabi, 89, CAT_MODULATOR>
     , DeclareApplet<ResetClock, 70, CAT_UTILITY | CAT_CLOCKING>
     , DeclareApplet<RndWalk, 69, CAT_MODULATOR>
-#ifdef PEWPEWPEW
     , DeclareApplet<RunglBook, 44, CAT_MODULATOR>
-#endif
     , DeclareApplet<ScaleDuet, 26, CAT_QUANTIZER>
     , DeclareApplet<Schmitt, 40, CAT_LOGIC>
     , DeclareApplet<Scope, 23, CAT_OTHER>
@@ -244,9 +228,7 @@ constexpr Registry reg = Registry<HemisphereApplet, HS::APPLET_SLOTS
     , DeclareApplet<SwitchSeq, 38, CAT_UTILITY>
     , DeclareApplet<TB_3PO, 60, CAT_SEQUENCER>
     , DeclareApplet<TLNeuron, 13, CAT_LOGIC>
-#ifdef PEWPEWPEW
     , DeclareApplet<Trending, 37, CAT_LOGIC>
-#endif
     , DeclareApplet<TrigSeq, 11, CAT_SEQUENCER | CAT_CLOCKING>
     , DeclareApplet<TrigSeq16, 25, CAT_SEQUENCER | CAT_CLOCKING>
     , DeclareApplet<TruthCat3, 85, CAT_LOGIC | CAT_SEQUENCER | CAT_CLOCKING>
