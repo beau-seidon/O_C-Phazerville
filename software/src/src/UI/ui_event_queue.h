@@ -59,7 +59,7 @@ public:
   }
 
   inline Event PullEvent() {
-    return std::move(events_.Read());
+    return events_.Read();
   }
 
   inline void Poke() {

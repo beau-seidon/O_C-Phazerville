@@ -42,7 +42,7 @@ namespace OC {
 // The theory is that they might not change as often.
 class GlobalSettings {
 public:
-  static constexpr uint32_t FOURCC = FOURCC<'O','C','S',2>::value;
+  static constexpr uint32_t FOURCC = FourCC<'O','C','S',2>::value;
 
   GlobalSettings() { }
   ~GlobalSettings() { }
