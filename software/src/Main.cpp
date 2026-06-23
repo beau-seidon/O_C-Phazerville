@@ -146,7 +146,7 @@ void FASTRUN CORE_timer_ISR() {
 #ifdef MULTIBOOT
 extern "C" {
   static void jump_to_alt(uint32_t choice) {
-    const uint32_t JUMP_ADDR = 0x60000000 + (choice * 0x80000);
+    const uint32_t JUMP_ADDR = 0x60000000 + (choice * 0x100000);
     uint32_t instptr = JUMP_ADDR + 0x1000 + sizeof(uint32_t);
     uint32_t instaddr = *(uint32_t*)instptr;
     ((void (*)(void))instaddr)();

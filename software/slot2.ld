@@ -3,7 +3,7 @@ MEMORY
 	ITCM (rx):  ORIGIN = 0x00000000, LENGTH = 512K
 	DTCM (rw):  ORIGIN = 0x20000000, LENGTH = 512K
 	RAM (rw):   ORIGIN = 0x20200000, LENGTH = 512K
-	FLASH (rx): ORIGIN = 0x60100000, LENGTH = 2048K
+	FLASH (rx): ORIGIN = 0x60200000, LENGTH = 1024K
 	ERAM (rw):  ORIGIN = 0x70000000, LENGTH = 32768K
 }
 
@@ -107,6 +107,8 @@ SECTIONS
 
 	_flashimagelen = __text_csf_end - ORIGIN(FLASH);
 	_teensy_model_identifier = 0x25;
+
+    ASSERT((_flashimagelen) <= 0x100000, "CRITICAL: T41 boot slot overflows the 1024K limit!")
 
 	.debug_info     0 : { *(.debug_info) }
 	.debug_abbrev   0 : { *(.debug_abbrev) }
