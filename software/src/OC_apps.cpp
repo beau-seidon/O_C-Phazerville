@@ -628,7 +628,7 @@ bool Ui::AppSettings(bool drawmenu) {
     item.x = menu::kIndentDx + 8;
     item.y = (64 - (5 * menu::kMenuLineH)) / 2;
 
-    for (int current = cursor.first_visible();
+    for (int current = max(cursor.first_visible(), 0);
          current <= cursor.last_visible() && current < (int)app_container.num_apps();
          ++current, item.y += menu::kMenuLineH) {
       item.selected = current == cursor.cursor_pos();

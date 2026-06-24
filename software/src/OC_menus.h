@@ -76,6 +76,7 @@ public:
     start_ = start;
     end_ = end;
     cursor_pos_ = start;
+    screen_line_ = start;
   }
 
   void AdjustEnd(int end) {
@@ -105,13 +106,10 @@ public:
             screen_line = screen_lines - 1;
         }
       }
-    } else {
-      if (end_ - start_ < screen_lines)
-        CONSTRAIN(screen_line, 0, (end_ - start_));
-      else
-        CONSTRAIN(screen_line, 0, screen_lines - 1);
     }
-    screen_line_ = screen_line;
+    if (end_ - start_ < screen_lines - 1)
+      CONSTRAIN(screen_line, 0, (end_ - start_));
+    screen_line_ = constrain(screen_line, 0, screen_lines - 1);
   }
 
   inline int cursor_pos() const {
@@ -119,7 +117,7 @@ public:
   }
 
   inline int first_visible() const {
-    return cursor_pos_ - screen_line_;
+    return max(cursor_pos_ - screen_line_, 0);
   }
 
   inline int last_visible() const {

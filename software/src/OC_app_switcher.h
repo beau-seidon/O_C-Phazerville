@@ -101,7 +101,7 @@ public:
     return kNumApps;
   }
 
-  inline AppBase * operator [](size_t i) { return pointers_[i]; }
+  inline AppBase * operator [](size_t i) { return pointers_[i < kNumApps ? i : 0]; }
 
   template <typename T>
   void for_each(T op) {
