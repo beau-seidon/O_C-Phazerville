@@ -54,7 +54,8 @@ struct Cal8ChannelConfig {
     uint8_t mode;
     int8_t offset; // fine-tuning offset
     int16_t scale_factor; // precision of 0.01% as an offset from 100%
-    int8_t transpose; // in semitones
+    int8_t transpose; // in scale degrees
+    int8_t octave_target;
     int8_t transpose_active; // held value while waiting for trigger
     bool chained;
 
@@ -168,6 +169,7 @@ public:
             if (overflow != 0) {
               q_engine[ch].octave = constrain(overflow, -octave_max, octave_max);
               channel[ch].transpose %= ssize_;
+              channel[ch].octave_target = q_engine[ch].octave;
             }
 
             uint32_t root_and_mode = uint32_t(values_[ix++]);
@@ -191,7 +193,7 @@ public:
             values_[ix++] = channel[ch].scale_factor + 500;
             values_[ix++] = channel[ch].offset + 63;
             values_[ix++] = channel[ch].transpose
-                          + q_engine[ch].octave * SCALE_SIZE(scale)
+                          + channel[ch].octave_target * SCALE_SIZE(scale)
                           + CAL8_MAX_TRANSPOSE;
             values_[ix++] = uint8_t(channel[ch].chained << 7)
                           | ((channel[ch].mode & 0x03) << 4)
@@ -438,6 +440,7 @@ public:
             // clocked transpose
             if (CONTINUOUS == cfg.mode || clocked) {
                 cfg.transpose_active = cfg.transpose;
+                q_engine[ch].octave = cfg.octave_target;
             }
             if (HS::frame.MIDIState.mapping[ch].semitone_mask != 0)
               cfg.transpose_active = 0;
@@ -625,12 +628,12 @@ public:
             return;
         }
 
-        auto &q = q_engine[sel_chan];
         preset_modified = 1;
 
         if (!edit_mode) { // Octave jump
-          q.octave += direction;
-          CONSTRAIN(q.octave, -octave_max, octave_max);
+          channel[sel_chan].octave_target = constrain(
+            channel[sel_chan].octave_target + direction, -octave_max, octave_max
+          );
         }
         else if ( !io_settings().autotune_data_enabled(sel_chan) )
         {
@@ -660,14 +663,17 @@ public:
         }
     }
 
+    void NudgeOctaveTarget(const int ch, const int dir) {
+      channel[ch].octave_target = constrain(
+        channel[ch].octave_target + dir, -octave_max, octave_max
+      );
+    }
     void SetTranspose(const int chan, int val) {
       const int ssize_ = SCALE_SIZE(HS::GetScale(chan));
       CONSTRAIN(val, -CAL8_MAX_TRANSPOSE, CAL8_MAX_TRANSPOSE);
       const int overflow = val / ssize_;
       if (overflow != 0) {
-        auto &q = q_engine[chan];
-        q.octave += overflow;
-        CONSTRAIN(q.octave, -octave_max, octave_max);
+        NudgeOctaveTarget(chan, overflow);
         val %= ssize_;
       }
       channel[chan].transpose = val;
@@ -747,7 +753,7 @@ public:
 
         // -- LCD Display Section --
         int s = SCALE_SIZE(HS::GetScale(sel_chan));
-        int degrees = channel[sel_chan].transpose + q_engine[sel_chan].octave * s;
+        int degrees = channel[sel_chan].transpose + channel[sel_chan].octave_target * s;
         const bool positive = degrees >= 0;
         const int octave = degrees / s;
         degrees %= s;
@@ -900,10 +906,11 @@ void AppCalibr8or::HandleButtonEvent(const UI::Event &event) {
     case UI::EVENT_BUTTON_DOWN:
         // Quantizer popup editor intercepts everything on-press
         if (HS::q_edit) {
+          // TODO: popup UI won't show target octave in clocked transpose mode
           if (event.control == OC::CONTROL_BUTTON_B)
-            HS::NudgeOctave(HS::qview, 1);
+            NudgeOctaveTarget(HS::qview, 1);
           else if (event.control == OC::CONTROL_BUTTON_A)
-            HS::NudgeOctave(HS::qview, -1);
+            NudgeOctaveTarget(HS::qview, -1);
           else {
             HS::q_edit = 0;
             HS::popup_tick = 0;
