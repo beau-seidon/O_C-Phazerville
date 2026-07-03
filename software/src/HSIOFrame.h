@@ -522,6 +522,7 @@ struct alignas(32) MIDIFrame {
         uint16_t filter = 0;
         bool omni = false;
         for (auto &map : mapping) {
+            if (map.learning()) omni = true;
             if (map.get_type() == MIDIMapSettings::NONE) continue;
             if (map.get_channel() < 16) filter |= (1 << map.get_channel());
             else omni = true;
