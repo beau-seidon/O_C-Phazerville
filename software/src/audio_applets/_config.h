@@ -48,6 +48,7 @@
 #include "WAVRecorderApplet.h"
 #include "WTVCOApplet.h"
 #include "HarmOscApplet.h"
+#include "AbyssApplet.h"
 
 #undef applet_name
 #undef applet_icon
@@ -62,6 +63,7 @@ Factory<AudioEffectDynamics, 20> HemisphereAudioApplet::compressor_factory;
 constexpr Registry mono_applets = Registry<HemisphereAudioApplet, NUM_SLOTS * 2
     , DeclareFancyApplet<PassthruApplet<MONO>>
     , DeclareFancyApplet<InputApplet<MONO>>
+    , DeclareFancyApplet<UpsampledApplet<MONO>>
     , DeclareFancyApplet<OscApplet>
     , DeclareFancyApplet<HandSawApplet>
     , DeclareFancyApplet<HarmOscApplet>
@@ -72,13 +74,13 @@ constexpr Registry mono_applets = Registry<HemisphereAudioApplet, NUM_SLOTS * 2
     , DeclareFancyApplet<LadderApplet<MONO>>
     , DeclareFancyApplet<FilterFolderApplet<MONO>>
     , DeclareFancyApplet<DelayApplet<MONO>>
+    , DeclareFancyApplet<AbyssApplet<MONO>>
     , DeclareFancyApplet<PhazerApplet>
     , DeclareFancyApplet<ReverbApplet>
     , DeclareFancyApplet<BungverbApplet>
     , DeclareFancyApplet<DynamicsApplet<MONO>>
     , DeclareFancyApplet<ThreeBandzApplet<MONO>>
     , DeclareFancyApplet<TuneTrackerApplet<MONO>>
-    , DeclareFancyApplet<UpsampledApplet<MONO>>
     , DeclareFancyApplet<GlitchApplet<MONO>>
     , DeclareFancyApplet<GritApplet<MONO>>
     , DeclareFancyApplet<MistierApplet<MONO>>
@@ -93,17 +95,18 @@ constexpr Registry mono_applets = Registry<HemisphereAudioApplet, NUM_SLOTS * 2
 constexpr Registry stereo_applets = Registry<HemisphereAudioApplet, NUM_SLOTS
   , DeclareFancyApplet<PassthruApplet<STEREO>>
   , DeclareFancyApplet<InputApplet<STEREO>>
+  , DeclareFancyApplet<UpsampledApplet<STEREO>>
   , DeclareFancyApplet<CrosspanApplet>
   , DeclareFancyApplet<MidSideApplet>
+  , DeclareFancyApplet<VcaApplet<STEREO>>
   , DeclareFancyApplet<DynamicsApplet<STEREO>>
   , DeclareFancyApplet<ThreeBandzApplet<STEREO>>
   , DeclareFancyApplet<DelayApplet<STEREO>>
+  , DeclareFancyApplet<AbyssApplet<STEREO>>
   , DeclareFancyApplet<LadderApplet<STEREO>>
-  , DeclareFancyApplet<VcaApplet<STEREO>>
   , DeclareFancyApplet<FilterFolderApplet<STEREO>>
   , DeclareFancyApplet<WavPlayerApplet<STEREO>>
   , DeclareFancyApplet<OneShotPlayerApplet<STEREO>>
-  , DeclareFancyApplet<UpsampledApplet<STEREO>>
 #ifndef AUDIO_INTERFACE
   , DeclareFancyApplet<ModalResonatorApplet<STEREO>>
   , DeclareFancyApplet<WavRecorderApplet<STEREO>>
