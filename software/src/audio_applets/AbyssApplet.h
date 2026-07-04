@@ -21,18 +21,7 @@ public:
     return "Abyss";
   }
 
-  void Start() {
-    alloc_ok = reverb.begin();
-    reverb.setMonoSum(Channels == MONO);
-    ForEachChannel(ch) {
-      if (Channels == STEREO || ch == 0) {
-        PatchCable(input_stream, ch, reverb, ch);
-        PatchCable(reverb, ch, wetdry[ch], WD_WET_CH);
-        PatchCable(input_stream, ch, wetdry[ch], WD_DRY_CH);
-        PatchCable(wetdry[ch], 0, output_stream, ch);
-      }
-    }
-  }
+  void Start() final;
 
   void Unload() {
     reverb.end();
@@ -40,14 +29,10 @@ public:
   }
 
   void Controller() {
-    const float mix01 =
-      constrain(0.01f * wet + mix_cv.InF(), 0.0f, 1.0f);
-    const float grav =
-      constrain(0.01f * gravity + grav_cv.InF(), -1.0f, 1.0f);
-    const float size01 =
-      constrain(0.01f * size + size_cv.InF(), 0.0f, 1.0f);
-    const float mod01 =
-      constrain(0.01f * mod_depth + mod_cv.InF(), 0.0f, 1.0f);
+    const float mix01 = constrain(0.01f * wet + mix_cv.InF(), 0.0f, 1.0f);
+    const float grav = constrain(0.01f * gravity + grav_cv.InF(), -1.0f, 1.0f);
+    const float size01 = constrain(0.01f * size + size_cv.InF(), 0.0f, 1.0f);
+    const float mod01 = constrain(0.01f * mod_depth + mod_cv.InF(), 0.0f, 1.0f);
 
     reverb.setGravity(grav);
     reverb.setSize(size01);
@@ -64,6 +49,7 @@ public:
         if (send_mode) {
           // dry passes at unity; Mix sets how much goes into the tank.
           // (Cheap approximation: scale the wet return instead of the send.)
+          // TODO: FIX THIS NONSENSE! The whole point of Send Mode is to listen to the tail.
           wetdry[ch].gain(WD_WET_CH, wet_gain);
           wetdry[ch].gain(WD_DRY_CH, 1.0f);
         } else {
@@ -74,23 +60,7 @@ public:
     }
   }
 
-  void View() {
-    if (!alloc_ok) {
-      gfxPrint(1, 15, "NO MEM!");
-      gfxPrint(1, 25, "Needs RAM/");
-      gfxPrint(1, 35, "PSRAM");
-      return;
-    }
-    const int row = RowOfCursor();
-    int scroll = row - (kVisibleRows - 1);
-    if (scroll < 0) scroll = 0;
-    if (scroll > ROWS - kVisibleRows) scroll = ROWS - kVisibleRows;
-    int y = 15;
-    for (int r = scroll; r < scroll + kVisibleRows && r < ROWS; ++r, y += 10) {
-      DrawRow(r, y);
-    }
-    gfxDisplayInputMapEditor();
-  }
+  void View() final;
 
   void AuxButton() override {
     if (cursor == MIX) send_mode ^= 1;
@@ -109,59 +79,7 @@ public:
     CursorToggle();
   }
 
-  void OnEncoderMove(int direction) override {
-    if (!EditMode()) {
-      MoveCursor(cursor, direction, CURSOR_LENGTH - 1);
-      return;
-    }
-    if (EditSelectedInputMap(direction)) return;
-
-    knob_accel += direction - direction * (millis_since_turn / 10);
-    if (direction * knob_accel <= 0) knob_accel = direction;
-    CONSTRAIN(knob_accel, -100, 100);
-
-    switch (cursor) {
-      case MIX:
-        wet = constrain(wet + direction, 0, 100);
-        break;
-      case MIX_CV:
-        mix_cv.ChangeSource(direction);
-        break;
-      case GRAVITY:
-        gravity = constrain(gravity + direction, -100, 100);
-        break;
-      case GRAVITY_CV:
-        grav_cv.ChangeSource(direction);
-        break;
-      case SIZE:
-        size = constrain(size + direction, 0, 100);
-        break;
-      case SIZE_CV:
-        size_cv.ChangeSource(direction);
-        break;
-      case PREDELAY:
-        predelay_2ms = constrain(predelay_2ms + knob_accel, 0, 250);
-        break;
-      case MOD_DEPTH:
-        mod_depth = constrain(mod_depth + direction, 0, 100);
-        break;
-      case MOD_CV:
-        mod_cv.ChangeSource(direction);
-        break;
-      case MOD_RATE:
-        mod_rate = constrain(mod_rate + direction, 1, 60);
-        break;
-      case LO_CUT:
-        locut = constrain(locut + direction, 0, 10);
-        break;
-      case HI_DAMP:
-        hidamp = constrain(hidamp + direction, 0, 10);
-        break;
-      case CURSOR_LENGTH:
-        break;
-    }
-    millis_since_turn = 0;
-  }
+  void OnEncoderMove(int direction) final;
 
 #define BLACKHOLE_PARAMS \
   wet, gravity, size, mod_depth, mod_rate, locut, hidamp, predelay_2ms
@@ -205,7 +123,7 @@ private:
     CURSOR_LENGTH,
   };
 
-  static const int ROWS = 7;
+  static const int ROWS = 8;
   static const int kVisibleRows = 5;
   static const uint8_t WD_DRY_CH = 0;
   static const uint8_t WD_WET_CH = 1;
@@ -218,7 +136,8 @@ private:
       case PREDELAY: return 3;
       case MOD_DEPTH: case MOD_CV: return 4;
       case MOD_RATE: return 5;
-      default: return 6;
+      case LO_CUT: return 6;
+      default: return 7;
     }
   }
 
@@ -268,7 +187,7 @@ private:
         gfxEndCursor(cursor == MOD_CV, false, mod_cv.InputName());
         break;
       case 5: {
-        gfxPrint(1, y, "Rate:");
+        gfxPrint(1, y, "R:");
         const int chz = mod_rate * 5; // centi-Hz
         gfxStartCursor(rx - 6 * 6, y);
         graphics.printf("%d.%02dHz", chz / 100, chz % 100);
@@ -276,11 +195,13 @@ private:
         break;
       }
       case 6:
-        gfxPrint(1, y, "Lo:");
+        gfxPrint(1, y, "Lo-cut:");
         gfxStartCursor();
         graphics.printf("%2d", locut);
         gfxEndCursor(cursor == LO_CUT);
-        gfxPrint(" Hi:");
+        break;
+      case 7:
+        gfxPrint(1, y, "Damp:");
         gfxStartCursor();
         graphics.printf("%2d", hidamp);
         gfxEndCursor(cursor == HI_DAMP);
@@ -315,3 +236,90 @@ private:
   AudioMixer<2> wetdry[Channels];
   AudioPassthrough<Channels> output_stream;
 };
+
+template <AudioChannels Channels>
+FLASHMEM void AbyssApplet<Channels>::View() {
+  if (!alloc_ok) {
+    gfxPrint(1, 15, "Out of RAM!!");
+    return;
+  }
+  const int row = RowOfCursor();
+  int scroll = row - (kVisibleRows - 1);
+  if (scroll < 0) scroll = 0;
+  if (scroll > ROWS - kVisibleRows) scroll = ROWS - kVisibleRows;
+  int y = 15;
+  for (int r = scroll; r < scroll + kVisibleRows && r < ROWS; ++r, y += 10) {
+    DrawRow(r, y);
+  }
+  gfxDisplayInputMapEditor();
+}
+
+template <AudioChannels Channels>
+FLASHMEM void AbyssApplet<Channels>::Start() {
+  alloc_ok = reverb.begin();
+  reverb.setMonoSum(Channels == MONO);
+  ForEachChannel(ch) {
+    if (Channels == STEREO || ch == 0) {
+      PatchCable(input_stream, ch, reverb, ch);
+      PatchCable(reverb, ch, wetdry[ch], WD_WET_CH);
+      PatchCable(input_stream, ch, wetdry[ch], WD_DRY_CH);
+      PatchCable(wetdry[ch], 0, output_stream, ch);
+    }
+  }
+}
+
+
+template <AudioChannels Channels>
+FLASHMEM void AbyssApplet<Channels>::OnEncoderMove(int direction) {
+  if (!EditMode()) {
+    MoveCursor(cursor, direction, CURSOR_LENGTH - 1);
+    return;
+  }
+  if (EditSelectedInputMap(direction)) return;
+
+  knob_accel += direction - direction * (millis_since_turn / 10);
+  if (direction * knob_accel <= 0) knob_accel = direction;
+  CONSTRAIN(knob_accel, -100, 100);
+
+  switch (cursor) {
+    case MIX:
+      wet = constrain(wet + direction, 0, 100);
+      break;
+    case MIX_CV:
+      mix_cv.ChangeSource(direction);
+      break;
+    case GRAVITY:
+      gravity = constrain(gravity + direction, -100, 100);
+      break;
+    case GRAVITY_CV:
+      grav_cv.ChangeSource(direction);
+      break;
+    case SIZE:
+      size = constrain(size + direction, 0, 100);
+      break;
+    case SIZE_CV:
+      size_cv.ChangeSource(direction);
+      break;
+    case PREDELAY:
+      predelay_2ms = constrain(predelay_2ms + knob_accel, 0, 250);
+      break;
+    case MOD_DEPTH:
+      mod_depth = constrain(mod_depth + direction, 0, 100);
+      break;
+    case MOD_CV:
+      mod_cv.ChangeSource(direction);
+      break;
+    case MOD_RATE:
+      mod_rate = constrain(mod_rate + direction, 1, 60);
+      break;
+    case LO_CUT:
+      locut = constrain(locut + direction, 0, 10);
+      break;
+    case HI_DAMP:
+      hidamp = constrain(hidamp + direction, 0, 10);
+      break;
+    case CURSOR_LENGTH:
+      break;
+  }
+  millis_since_turn = 0;
+}
