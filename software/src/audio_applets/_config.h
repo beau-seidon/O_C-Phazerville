@@ -76,6 +76,7 @@ constexpr Registry mono_applets = Registry<HemisphereAudioApplet, NUM_SLOTS * 2
     , DeclareFancyApplet<ReverbApplet>
     , DeclareFancyApplet<BungverbApplet>
     , DeclareFancyApplet<DynamicsApplet<MONO>>
+    , DeclareFancyApplet<ThreeBandzApplet<MONO>>
     , DeclareFancyApplet<TuneTrackerApplet<MONO>>
     , DeclareFancyApplet<UpsampledApplet<MONO>>
     , DeclareFancyApplet<GlitchApplet<MONO>>
@@ -95,7 +96,7 @@ constexpr Registry stereo_applets = Registry<HemisphereAudioApplet, NUM_SLOTS
   , DeclareFancyApplet<CrosspanApplet>
   , DeclareFancyApplet<MidSideApplet>
   , DeclareFancyApplet<DynamicsApplet<STEREO>>
-  , DeclareFancyApplet<ThreeBandzApplet>
+  , DeclareFancyApplet<ThreeBandzApplet<STEREO>>
   , DeclareFancyApplet<DelayApplet<STEREO>>
   , DeclareFancyApplet<LadderApplet<STEREO>>
   , DeclareFancyApplet<VcaApplet<STEREO>>

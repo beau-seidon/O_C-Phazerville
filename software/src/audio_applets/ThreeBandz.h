@@ -6,11 +6,11 @@
 #include "../Audio/AudioPassthrough.h"
 
 // stereo only for now
-//template <AudioChannels Channels>
+template <AudioChannels Channels>
 class ThreeBandzApplet : public HemisphereAudioApplet {
 public:
   static constexpr int BANDZ = 3;
-  static constexpr int Channels = 2;
+  //static constexpr int Channels = 2;
 
   enum ThreeBandCursor {
     //IN_GAIN,
@@ -269,10 +269,13 @@ private:
   AudioPassthrough<Channels> output;
 };
 
-FLASHMEM void ThreeBandzApplet::View() {
+template <AudioChannels Channels>
+FLASHMEM void ThreeBandzApplet<Channels>::View() {
   MainView();
 }
-FLASHMEM void ThreeBandzApplet::DrawFullScreen() {
+
+template <AudioChannels Channels>
+FLASHMEM void ThreeBandzApplet<Channels>::DrawFullScreen() {
   if (!alloc_ok) return;
   graphics.drawLine(64 - gfx_offset, 26, 127 - gfx_offset, 26, 3);
   for (int i = 0; i < BANDZ; i++) {
