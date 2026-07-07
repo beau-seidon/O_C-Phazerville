@@ -60,7 +60,7 @@ This firmware fork is primarily built using Platform IO, a Python-based build to
 
 The PlatformIO project for the source code lives within the `software/` directory. From there, you can Build the desired configuration and Upload via USB to your module. In the terminal, I type:
 ```
-pio run -e T41 -t upload
+pio run -e T41_audio -t upload
 ```
 Or, for older Teensy 3.2 modules:
 ```

@@ -7,8 +7,10 @@ TODO (Roadmap)
 * Auto-tuner with floor/ceiling detection (fail gracefully)
 * generalized AppletParams for flexible assignment, extra virtual I/O
 * Integrate Calibr8or with DAC for global tracking adjustments
+
+# v2.1
+* Migrate to HexeFX/OpenAudio libraries for 32-bit float processing
 * USB Gamepad support
-* Config option for LFS vs. SD for preset storage
 
 # ???
 * Re-implement Piqued envelopes in an applet
@@ -21,6 +23,7 @@ TODO (Roadmap)
     - MIDI output for all apps?
     - Implement some MIDI SysEx commands, sheesh
     - WebMIDI interface
+* Config option for LFS vs. SD for preset storage
 
 # APP IDEAS
 * Modul8or
