@@ -58,6 +58,7 @@ public:
   void setLoCut(float v) { core.SetLoCut(v); }            // 0..1
   void setHiDamp(float v) { core.SetHiDamp(v); }          // 0..1
   void setMonoSum(bool b) { core.SetMonoSum(b); }
+  void setInputGain(float g) { in_gain = g; }
   void freeze() {} // reserved
 
   virtual void update(void) override {
@@ -83,8 +84,8 @@ public:
     const int16_t* pr = inR ? inR->data : pl;
 
     for (int n = 0; n < AUDIO_BLOCK_SAMPLES; ++n) {
-      const float l = pl ? pl[n] * (1.0f / 32768.0f) : 0.0f;
-      const float r = pr ? pr[n] * (1.0f / 32768.0f) : 0.0f;
+      const float l = pl ? pl[n] * (in_gain / 32768.0f) : 0.0f;
+      const float r = pr ? pr[n] * (in_gain / 32768.0f) : 0.0f;
       float wl, wr;
       core.Process(l, r, wl, wr);
       int32_t sl = static_cast<int32_t>(wl * 32767.0f);
@@ -115,4 +116,5 @@ private:
   AbyssCore core;
   void* arena = nullptr;
   bool arena_in_psram = false;
+  float in_gain = 1.0f;
 };

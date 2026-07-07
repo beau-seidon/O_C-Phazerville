@@ -44,13 +44,12 @@ public:
 
     float dry_gain, wet_gain;
     EqualPowerFade(dry_gain, wet_gain, mix01);
+    reverb.setInputGain(send_mode ? wet_gain : 1.0f);
     ForEachChannel(ch) {
       if (Channels == STEREO || ch == 0) {
         if (send_mode) {
-          // dry passes at unity; Mix sets how much goes into the tank.
-          // (Cheap approximation: scale the wet return instead of the send.)
-          // TODO: FIX THIS NONSENSE! The whole point of Send Mode is to listen to the tail.
-          wetdry[ch].gain(WD_WET_CH, wet_gain);
+          // wet & dry pass thru at unity; Mix sets how much goes into the tank.
+          wetdry[ch].gain(WD_WET_CH, 1.0f);
           wetdry[ch].gain(WD_DRY_CH, 1.0f);
         } else {
           wetdry[ch].gain(WD_WET_CH, wet_gain);
