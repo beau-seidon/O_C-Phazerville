@@ -49,6 +49,7 @@
 #include "WTVCOApplet.h"
 #include "HarmOscApplet.h"
 #include "AbyssApplet.h"
+#include "AnimorfApplet.h"
 
 #undef applet_name
 #undef applet_icon
@@ -75,6 +76,7 @@ constexpr Registry mono_applets = Registry<HemisphereAudioApplet, NUM_SLOTS * 2
     , DeclareFancyApplet<FilterFolderApplet<MONO>>
     , DeclareFancyApplet<DelayApplet<MONO>>
     , DeclareFancyApplet<AbyssApplet<MONO>>
+    , DeclareFancyApplet<AnimorfApplet<MONO>>
     , DeclareFancyApplet<PhazerApplet>
     , DeclareFancyApplet<ReverbApplet>
     , DeclareFancyApplet<BungverbApplet>
@@ -103,6 +105,7 @@ constexpr Registry stereo_applets = Registry<HemisphereAudioApplet, NUM_SLOTS
   , DeclareFancyApplet<ThreeBandzApplet<STEREO>>
   , DeclareFancyApplet<DelayApplet<STEREO>>
   , DeclareFancyApplet<AbyssApplet<STEREO>>
+  , DeclareFancyApplet<AnimorfApplet<STEREO>>
   , DeclareFancyApplet<LadderApplet<STEREO>>
   , DeclareFancyApplet<FilterFolderApplet<STEREO>>
   , DeclareFancyApplet<WavPlayerApplet<STEREO>>
