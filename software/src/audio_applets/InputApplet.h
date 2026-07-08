@@ -17,7 +17,7 @@ public:
 
     ForEachChannel(ch) {
       PatchCable(OC::AudioIO::InputStream(0), ch, srcmix[ch], 0);
-#ifdef USB_AUDIO
+#ifdef AUDIO_INTERFACE
       PatchCable(OC::AudioIO::InputStream(1), ch, srcmix[ch], 1);
 #endif
 
@@ -57,7 +57,7 @@ public:
   void View() override {
     const char* const txt[] = {
       "Left", "Right", "Dual", "Mixed",
-#ifdef USB_AUDIO
+#ifdef AUDIO_INTERFACE
       "USB L", "USB R", "USB Dual", "USB Mix"
 #endif
     };
@@ -120,7 +120,7 @@ public:
       case CHANNEL_MODE:
         modesel_ = constrain(modesel_ + direction, 0, MODE_COUNT - 1);
         if (Channels == MONO && (modesel_ == DUAL
-#ifdef USB_AUDIO
+#ifdef AUDIO_INTERFACE
             || modesel_ == USB_DUAL
 #endif
           )) modesel_ += direction;
@@ -142,7 +142,7 @@ public:
 
     ForEachChannel(ch) {
       switch (modesel_) {
-#ifdef USB_AUDIO
+#ifdef AUDIO_INTERFACE
         case USB_DUAL:
         case USB_MIX:
         case USB_L:
@@ -162,14 +162,14 @@ public:
     }
     for (int ch = 0; ch < Channels; ++ch) {
       switch (modesel_) {
-#ifdef USB_AUDIO
+#ifdef AUDIO_INTERFACE
         case USB_DUAL:
 #endif
         case DUAL:
           mixer[ch].gain(0, lvl_scalar * (1-ch)); // Left to ch
           mixer[ch].gain(1, lvl_scalar * ch); // Right to ch
           break;
-#ifdef USB_AUDIO
+#ifdef AUDIO_INTERFACE
         case USB_MIX:
 #endif
         case MIXED:
@@ -177,14 +177,14 @@ public:
           mixer[ch].gain(0, lvl_scalar); // Left to ch
           mixer[ch].gain(1, lvl_scalar); // Right to ch
           break;
-#ifdef USB_AUDIO
+#ifdef AUDIO_INTERFACE
         case USB_L:
 #endif
         case LEFT:
           mixer[ch].gain(0, lvl_scalar); // Left to ch
           mixer[ch].gain(1, 0.0f); // Right to ch
           break;
-#ifdef USB_AUDIO
+#ifdef AUDIO_INTERFACE
         case USB_R:
 #endif
         case RIGHT:
@@ -214,7 +214,7 @@ private:
 
   enum ModeSelect {
     LEFT, RIGHT, DUAL, MIXED,
-#ifdef USB_AUDIO
+#ifdef AUDIO_INTERFACE
     USB_L, USB_R, USB_DUAL, USB_MIX,
 #endif
     MODE_COUNT

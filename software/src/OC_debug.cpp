@@ -165,7 +165,7 @@ static void debug_menu_version()
 #if defined(USB_MIDI) || defined (USB_MIDI_AUDIO_SERIAL)
   graphics.print("MIDI");
 #endif
-#if defined(USB_AUDIO) || defined (USB_MIDI_AUDIO_SERIAL)
+#if defined(AUDIO_INTERFACE)
   graphics.print("+Audio");
 #endif
 #ifdef USB_MTPDISK
