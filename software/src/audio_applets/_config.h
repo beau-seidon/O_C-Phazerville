@@ -104,8 +104,8 @@ constexpr Registry stereo_applets = Registry<HemisphereAudioApplet, NUM_SLOTS
   , DeclareFancyApplet<WavPlayerApplet<STEREO>>
   , DeclareFancyApplet<OneShotPlayerApplet<STEREO>>
   , DeclareFancyApplet<UpsampledApplet<STEREO>>
-  , DeclareFancyApplet<ModalResonatorApplet<STEREO>>
 #ifndef AUDIO_INTERFACE
+  , DeclareFancyApplet<ModalResonatorApplet<STEREO>>
   , DeclareFancyApplet<WavRecorderApplet<STEREO>>
 #endif
 >{};
