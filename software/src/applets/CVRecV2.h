@@ -142,7 +142,7 @@ public:
         size_t i = 0;
         ForEachChannel(ch) {
           p = (uint16_t*)cv[ch];
-          while (i < CVREC_MAX_STEP) {
+          while (i < CVREC_MAX_STEP * (1 + ch)) {
             Pack(data, PackLocation{(i % 4) * 16, 16}, *p++);
             if ((i % 4) == 3) {
               SetData(i / 4, data);
@@ -167,7 +167,7 @@ public:
         size_t i = 0;
         ForEachChannel(ch) {
           p = (uint16_t*)cv[ch];
-          while (i < CVREC_MAX_STEP) {
+          while (i < CVREC_MAX_STEP * (1 + ch)) {
             if ((i % 4) == 0) {
               if (!GetData(i / 4, data)) break;
             }
