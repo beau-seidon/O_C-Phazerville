@@ -188,12 +188,12 @@ constexpr Registry reg = Registry<HemisphereApplet, HS::APPLET_SLOTS
     , DeclareApplet<GatedVCA, 17, CAT_UTILITY | CAT_LOGIC>
     , DeclareApplet<Logic, 10, CAT_LOGIC | CAT_CLOCKING>
     , DeclareApplet<LowerRenz, 21, CAT_MODULATOR>
+    , DeclareApplet<MarkoV, 93, CAT_SEQUENCER>
+    , DeclareApplet<MarkovPerc, 94, CAT_OTHER>
     , DeclareApplet<Metronome, 50, CAT_CLOCKING>
 #ifdef __IMXRT1062__
     , DeclareApplet<MidiLoop, 81, CAT_MIDI>
 #endif
-    , DeclareApplet<MarkoV, 93, CAT_SEQUENCER>
-    , DeclareApplet<MarkovPerc, 94, CAT_OTHER>
     , DeclareApplet<hMIDIIn, 150, CAT_MIDI>
     , DeclareApplet<hMIDIOut, 27, CAT_MIDI>
 #ifdef PEWPEWPEW
