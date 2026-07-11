@@ -77,9 +77,8 @@ public:
         manual_strike_ = false;
     }
 
-    // --- View (64×64 px) -----------------------------------------------------
-
-    FLASHMEM void View() override {
+    void View() final;
+    void MainView() {
         // VU bars: excitation input (y=7), output wet mix (y=12)
         uint16_t peak = channels[0].resonator.readPeak();
         if (peak > 0) {
@@ -172,14 +171,14 @@ public:
 
     // --- AuxButton: manual test strike ---------------------------------------
 
-    FLASHMEM void AuxButton() override {
+    void AuxButton() override {
         manual_strike_ = true;
         CancelEdit();
     }
 
     // --- Button / encoder ----------------------------------------------------
 
-    FLASHMEM void OnButtonPress() override {
+    void OnButtonPress() override {
         if (CheckEditInputMapPress(
                 cursor,
                 IndexedInput(FREQ_CV,   freq_cv),
@@ -195,7 +194,7 @@ public:
         CursorToggle();
     }
 
-    FLASHMEM void OnEncoderMove(int direction) override {
+    void OnEncoderMove(int direction) override {
         if (!EditMode()) {
             MoveCursor(cursor, direction, VEL_CV);
             return;
@@ -233,7 +232,7 @@ public:
     // --- Persistence ---------------------------------------------------------
 
 #define MODAL_PARAMS pitch, structure, brightness, damping, position, mix, velocity
-    FLASHMEM void OnDataRequest(std::array<uint64_t, CONFIG_SIZE>& data) override {
+    void OnDataRequest(std::array<uint64_t, CONFIG_SIZE>& data) override {
         uint16_t dummy = 0;
         data[0] = PackPackables(MODAL_PARAMS);
         data[1] = PackPackables(freq_cv, struct_cv, bright_cv, damp_cv);
@@ -241,7 +240,7 @@ public:
         data[3] = PackPackables(strike_input);
     }
 
-    FLASHMEM void OnDataReceive(const std::array<uint64_t, CONFIG_SIZE>& data) override {
+    void OnDataReceive(const std::array<uint64_t, CONFIG_SIZE>& data) override {
         uint16_t dummy = 0;
         UnpackPackables(data[0], MODAL_PARAMS);
         UnpackPackables(data[1], freq_cv, struct_cv, bright_cv, damp_cv);
@@ -256,7 +255,7 @@ public:
     AudioStream* OutputStream() override { return &output_stream; }
 
 protected:
-    FLASHMEM void SetHelp() override {}
+    void SetHelp() override {}
 
 private:
     // Cursor order matches display top-to-bottom
@@ -326,3 +325,8 @@ private:
     AudioPassthrough<Channels> input_stream;
     AudioPassthrough<Channels> output_stream;
 };
+
+template <AudioChannels Channels>
+FLASHMEM void ModalResonatorApplet<Channels>::View() {
+  MainView();
+}
