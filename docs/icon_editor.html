@@ -1,0 +1,658 @@
+<!--
+ this file was generated using ChatGPT by @beau-seidon and modified to fix a couple issues.
+ i'm not sure how AI code copyright works so i'm going to slap an MIT license on it, and fix any problems or infringements as needed
+-->
+
+<!--
+Copyright 2026 Beau Sterling
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Phz Icon Editor</title>
+
+    <style>
+        :root {
+            --page-bg: #27262b;
+            --surface: #27262b;
+            --text: #ffffff;
+            --muted: #4d4b52;
+            --border: #44434d;
+            --border-dark: #212126;
+            --link: #00f;
+            --link-hover: #2b7ce9;
+
+            --control-bg: #302d36;
+            --control-hover: #212126;
+
+            --cell-size: min(8vw, 58px);
+            --gap: 1px;
+            --on: #ffffff;
+            --off: #000000;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            font-size: 16px;
+        }
+
+        body {
+            margin: 0;
+            padding: 2rem 1rem 4rem;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                "Helvetica Neue", Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.5;
+            color: var(--text);
+            background: var(--page-bg);
+        }
+
+        main {
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem 2.5rem 2.5rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+
+        h1 {
+            margin: 0 0 1.5rem;
+            font-size: 2rem !important;
+            font-weight: 400;
+            line-height: 1.25;
+            letter-spacing: -0.02em;
+            color: #ffffff;
+        }
+
+        h2 {
+            margin: 1.75rem 0 0.5rem;
+            padding-bottom: 0.35rem;
+            font-size: 1.25rem;
+            font-weight: 500;
+            line-height: 1.4;
+            color: #ffffff;
+            border-bottom: 1px solid var(--border);
+        }
+
+        label {
+            display: inline-block;
+            margin-bottom: 0.25rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        select,
+        button,
+        textarea,
+        input {
+            font: inherit;
+        }
+
+        select {
+            min-width: 180px;
+            padding: 0.45rem 0.6rem;
+            border: 1px solid var(--border-dark);
+            border-radius: 3px;
+            color: var(--text);
+            background: var(--surface);
+        }
+
+        select:focus,
+        textarea:focus {
+            border-color: var(--link);
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: #302d36;
+            border: 1px solid var(--border-dark);
+            border-radius: 3px;
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        button {
+            padding: 0.45rem 0.75rem;
+            border: 1px solid var(--border-dark);
+            border-radius: 3px;
+            color: var(--text);
+            background: var(--control-bg);
+            cursor: pointer;
+            transition:
+                background 0.1s ease,
+                border-color 0.1s ease,
+                color 0.1s ease;
+        }
+
+        button:hover {
+            color: var(--link-hover);
+            background: var(--control-hover);
+            border-color: #212126;
+        }
+
+        button:active {
+            background: #302d36;
+        }
+
+        button:focus-visible {
+            outline: 2px solid var(--link);
+            outline-offset: 2px;
+        }
+
+        .grid-wrap {
+            display: flex;
+            justify-content: center;
+            margin: 1.5rem 0;
+            padding: 1.25rem;
+            background: #27262b;
+        }
+
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(8, var(--cell-size));
+            grid-template-rows: repeat(8, var(--cell-size));
+            gap: var(--gap);
+            border: 2px solid var(--border-dark);
+            background: var(--border-dark);
+            user-select: none;
+        }
+
+        .cell {
+            width: var(--cell-size);
+            height: var(--cell-size);
+            padding: 0;
+            border: 0;
+            border-radius: 0;
+            background: var(--off);
+            cursor: pointer;
+        }
+
+        .cell:hover {
+            opacity: 0.8;
+        }
+
+        .cell.on {
+            background: var(--on);
+        }
+
+        .cell:focus-visible {
+            outline: 3px solid #7253ed;
+            outline-offset: -3px;
+        }
+
+        .output {
+            width: 100%;
+            min-height: 92px;
+            padding: 0.75rem;
+            border: 1px solid var(--border-dark);
+            border-radius: 3px;
+            resize: vertical;
+            font-family: Consolas, "Cascadia Mono", "Courier New", monospace;
+            font-size: 0.9rem;
+            line-height: 1.45;
+            color: #ffffff;
+            background: #302d36;
+        }
+
+        .output:focus {
+            background: #212126;
+        }
+
+        .input {
+            background: #302d36;
+        }
+
+        .status {
+            min-height: 1.4em;
+            margin-top: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+
+        .help {
+            margin-top: 1.5rem;
+            padding: 0.85rem 1rem;
+            color: var(--muted);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            background: #27262b;
+        }
+
+        code {
+            font-family: Consolas, "Cascadia Mono", "Courier New", monospace;
+            font-size: 0.9em;
+        }
+
+        a {
+            color: var(--link);
+        }
+
+        a:hover {
+            color: var(--link-hover);
+        }
+
+        @media (max-width: 700px) {
+            body {
+                padding: 0;
+            }
+
+            main {
+                max-width: none;
+                padding: 1.25rem 1rem 2rem;
+                border: 0;
+                box-shadow: none;
+            }
+
+            h1 {
+                font-size: 1.75rem !important;
+            }
+
+            .controls {
+                grid-template-columns: 1fr;
+            }
+
+            select {
+                width: 100%;
+            }
+
+            :root {
+                --cell-size: min(10vw, 48px);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main>
+        <h1>Phz Icon Editor</h1>
+
+        <div class="controls">
+            <div>
+                <label for="major">Storage</label><br>
+                <select id="major">
+                    <option value="column">Column Major</option>
+                    <option value="row">Row Major</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="bitOrder">Bit orientation</label><br>
+                <select id="bitOrder">
+                    <option value="msb-bottom">MSB Bottom</option>
+                    <option value="msb-top">MSB Top</option>
+                    <option value="lsb-bottom">LSB Bottom</option>
+                    <option value="lsb-top">LSB Top</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="format">Output format</label><br>
+                <select id="format">
+                    <option value="c">C / C++</option>
+                    <option value="plain">Hex values only</option>
+                    <option value="hex">0xHH, 0xHH, ...</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="buttons">
+            <button id="clear">Clear</button>
+            <button id="invert">Invert</button>
+            <button id="rotateCW">Rotate CW</button>
+            <button id="rotateCCW">Rotate CCW</button>
+            <button id="flipH">Flip H</button>
+            <button id="flipV">Flip V</button>
+        </div>
+
+        <div class="grid-wrap">
+            <div id="grid" role="grid" aria-label="8 by 8 bitmap editor"></div>
+        </div>
+
+        <h2>Output (uint8_t array):</h2>
+        <textarea id="output" class="output" spellcheck="false" readonly></textarea>
+
+        <h2>Input</h2>
+        <textarea id="input" class="output input" spellcheck="false" 
+        placeholder="Paste something like: 
+{ 0x05, 0x05, 0x25, 0x12, 0x08, 0xe4, 0xa0, 0xe0 };
+or:
+const uint8_t ICON[8] = { 0x07, 0x08, ... };">
+        </textarea>
+
+        <div class="buttons">
+            <button id="load">Load into grid</button>
+            <button id="copy">Copy output</button>
+        </div>
+
+        <div id="status" class="status"></div>
+
+        <p class="help">
+            Default orientation matches the old Bitca tool:
+            <b>Column Major, MSB Bottom</b>.
+            In that mode each byte is one vertical column, and bit 7 is
+            the bottom pixel while bit 0 is the top pixel.
+            Changing orientation converts the displayed bitmap without
+            changing the pixels.
+        </p>
+    </main>
+
+    <script>
+        "use strict";
+
+        const SIZE = 8;
+        const pixels = Array.from(
+            { length: SIZE },
+            () => Array(SIZE).fill(false)
+        );
+
+        const grid = document.getElementById("grid");
+        const output = document.getElementById("output");
+        const input = document.getElementById("input");
+        const status = document.getElementById("status");
+        const major = document.getElementById("major");
+        const bitOrder = document.getElementById("bitOrder");
+        const format = document.getElementById("format");
+
+        const cells = [];
+
+        function buildGrid() {
+            grid.innerHTML = "";
+            cells.length = 0;
+
+            for (let y = 0; y < SIZE; y++) {
+                for (let x = 0; x < SIZE; x++) {
+                    const cell = document.createElement("button");
+
+                    cell.className = "cell";
+                    cell.type = "button";
+                    cell.setAttribute("role", "gridcell");
+                    cell.setAttribute(
+                        "aria-label",
+                        `row ${y + 1}, column ${x + 1}`
+                    );
+
+                    cell.addEventListener("click", () => {
+                        pixels[y][x] = !pixels[y][x];
+                        update();
+                    });
+
+                    grid.appendChild(cell);
+                    cells.push(cell);
+                }
+            }
+        }
+
+        function updateGrid() {
+            let i = 0;
+
+            for (let y = 0; y < SIZE; y++) {
+                for (let x = 0; x < SIZE; x++) {
+                    cells[i].classList.toggle("on", pixels[y][x]);
+                    cells[i].setAttribute(
+                        "aria-pressed",
+                        pixels[y][x] ? "true" : "false"
+                    );
+                    i++;
+                }
+            }
+        }
+
+        function bitIndexForRow(y) {
+            const order = bitOrder.value;
+
+            if (order === "msb-bottom") return y;
+            if (order === "msb-top") return 7 - y;
+            if (order === "lsb-bottom") return 7 - y;
+
+            return y;
+        }
+
+        function encode() {
+            const bytes = [];
+
+            if (major.value === "column") {
+                for (let x = 0; x < SIZE; x++) {
+                    let value = 0;
+
+                    for (let y = 0; y < SIZE; y++) {
+                        if (pixels[y][x]) {
+                            value |= (1 << bitIndexForRow(y));
+                        }
+                    }
+
+                    bytes.push(value);
+                }
+            } else {
+                for (let y = 0; y < SIZE; y++) {
+                    let value = 0;
+
+                    for (let x = 0; x < SIZE; x++) {
+                        if (pixels[y][x]) {
+                            value |= (1 << bitIndexForRow(x));
+                        }
+                    }
+
+                    bytes.push(value);
+                }
+            }
+
+            return bytes;
+        }
+
+        function formatBytes(bytes) {
+            const hex = bytes.map(
+                v => "0x" + v.toString(16).padStart(2, "0")
+            );
+
+            if (format.value === "plain") {
+                return hex.join(", ");
+            }
+
+            if (format.value === "hex") {
+                return hex.join(", ");
+            }
+
+            return "const uint8_t ICON[8] = { "
+                + hex.join(", ")
+                + " };";
+        }
+
+        function update() {
+            updateGrid();
+            output.value = formatBytes(encode());
+        }
+
+        function decode(bytes) {
+            for (let y = 0; y < SIZE; y++) {
+                pixels[y].fill(false);
+            }
+
+            if (major.value === "column") {
+                for (let x = 0; x < SIZE; x++) {
+                    const value = bytes[x];
+
+                    for (let y = 0; y < SIZE; y++) {
+                        pixels[y][x] =
+                            Boolean(value & (1 << bitIndexForRow(y)));
+                    }
+                }
+            } else {
+                for (let y = 0; y < SIZE; y++) {
+                    const value = bytes[y];
+
+                    for (let x = 0; x < SIZE; x++) {
+                        pixels[y][x] =
+                            Boolean(value & (1 << bitIndexForRow(x)));
+                    }
+                }
+            }
+
+            update();
+        }
+
+        function parseArray(text) {
+            // Remove C/C++ comments first.
+            text = text.replace(/\/\*[\s\S]*?\*\//g, "");
+            text = text.replace(/\/\/.*$/gm, "");
+
+            // If braces are present, only parse the contents of the braces.
+            // This prevents things like ICON[8] from being interpreted as data.
+            const braceMatch = text.match(/\{([\s\S]*?)\}/);
+            if (braceMatch) {
+                text = braceMatch[1];
+            }
+
+            // Extract numeric literals.
+            // Supports 0xHH and ordinary decimal values.
+            const matches = text.match(/0x[0-9a-fA-F]+|\b\d+\b/g) || [];
+
+            const values = [];
+
+            for (const token of matches) {
+                const value = token.toLowerCase().startsWith("0x")
+                    ? parseInt(token, 16)
+                    : parseInt(token, 10);
+
+                if (value >= 0 && value <= 255) {
+                    values.push(value);
+                }
+            }
+
+            if (values.length < 8) {
+                throw new Error("Could not find 8 byte values.");
+            }
+
+            return values.slice(0, 8);
+        }
+
+        function setStatus(message, error = false) {
+            status.textContent = message;
+            status.style.color = error ? "#a00" : "#5c5962";
+        }
+
+        function clear() {
+            for (let y = 0; y < SIZE; y++) {
+                pixels[y].fill(false);
+            }
+
+            update();
+        }
+
+        function invert() {
+            for (let y = 0; y < SIZE; y++) {
+                for (let x = 0; x < SIZE; x++) {
+                    pixels[y][x] = !pixels[y][x];
+                }
+            }
+
+            update();
+        }
+
+        function rotateCW() {
+            const copy = pixels.map(row => row.slice());
+
+            for (let y = 0; y < SIZE; y++) {
+                for (let x = 0; x < SIZE; x++) {
+                    pixels[y][x] = copy[SIZE - 1 - x][y];
+                }
+            }
+
+            update();
+        }
+
+        function rotateCCW() {
+            const copy = pixels.map(row => row.slice());
+
+            for (let y = 0; y < SIZE; y++) {
+                for (let x = 0; x < SIZE; x++) {
+                    pixels[y][x] = copy[x][SIZE - 1 - y];
+                }
+            }
+
+            update();
+        }
+
+        function flipH() {
+            for (let y = 0; y < SIZE; y++) {
+                pixels[y].reverse();
+            }
+
+            update();
+        }
+
+        function flipV() {
+            pixels.reverse();
+            update();
+        }
+
+        document.getElementById("load").addEventListener("click", () => {
+            try {
+                const bytes = parseArray(input.value);
+                decode(bytes);
+                setStatus("Loaded 8 bytes.");
+            } catch (e) {
+                setStatus(e.message, true);
+            }
+        });
+
+        document.getElementById("copy").addEventListener("click", async () => {
+            try {
+                await navigator.clipboard.writeText(output.value);
+                setStatus("Copied.");
+            } catch (e) {
+                output.select();
+                document.execCommand("copy");
+                setStatus("Copied.");
+            }
+        });
+
+        document.getElementById("clear").addEventListener("click", clear);
+        document.getElementById("invert").addEventListener("click", invert);
+        document.getElementById("rotateCW").addEventListener(
+            "click",
+            rotateCW
+        );
+        document.getElementById("rotateCCW").addEventListener(
+            "click",
+            rotateCCW
+        );
+        document.getElementById("flipH").addEventListener("click", flipH);
+        document.getElementById("flipV").addEventListener("click", flipV);
+
+        major.addEventListener("change", update);
+        bitOrder.addEventListener("change", update);
+        format.addEventListener("change", update);
+
+        buildGrid();
+        update();
+
+        // Old tool's documented orientation.
+        major.value = "column";
+        bitOrder.value = "msb-bottom";
+        update();
+    </script>
+</body>
+
+</html>
