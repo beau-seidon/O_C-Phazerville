@@ -23,7 +23,6 @@
     - migrate mapping to global settings
     - selectable cv output meters or revert to raw counts
     - show icons for axis/button input type
-    - fix stupid help page function
 */
 
 #ifdef USB_GAMEPAD
@@ -81,7 +80,7 @@ class JoyStyx : public HemisphereApplet {
                         Out(ch, constrain(cv[ch] + In(ch), HEMISPHERE_MIN_CV, HEMISPHERE_MAX_CV));
                     } else {
                         if (!sh_latch || sample) cv[ch] = (gs.button_mask & (1 << param[ch])) != 0;
-                        GateOut(ch, cv[ch]);
+                        GateOut(ch, (In(ch) > HEMISPHERE_3V_CV) || cv[ch]);
                     }
                 }
             }
@@ -102,7 +101,7 @@ class JoyStyx : public HemisphereApplet {
 
         void OnEncoderMove(int direction) {
             if (!EditMode()) {
-                MoveCursor(cursor, direction, CURSOR_LAST);
+                MoveCursor(cursor, direction, GP_INPUT);  // CURSOR_LAST);  // temp fix
                 return;
             }
 
@@ -160,20 +159,28 @@ class JoyStyx : public HemisphereApplet {
             help[HELP_CV2]      = "+ Out2";
             help[HELP_OUT1]     = getOutputLabel(0);
             help[HELP_OUT2]     = getOutputLabel(1);
-            help[HELP_EXTRA1]   = "";  // next row fills in this one too
-            help[HELP_EXTRA2]   = helpExtraPrintHelper();
+            help[HELP_EXTRA1]   = helpExtraPrintHelper(0);
+            help[HELP_EXTRA2]   = helpExtraPrintHelper(1);
             //                    "---------------------" <-- Extra text size guide
         }
 
-        const char* helpExtraPrintHelper() {  // HAAAAAACKYSACK
-            int y = 45;
-            gfxPrint(-64*hemisphere, y, gs.gamepad->type_name);
-            gfxPrint(2+64*(1-hemisphere), y, "B:"); gfxPrint(gs.gamepad->button_count);
-            gfxPrint(" X:"); gfxPrint(gs.gamepad->axis_count);
-            y += 10;
-            gfxPrint(-64*hemisphere, y, "VID:"); graphics.printf("0x%04X", gs.vid);
-            gfxPrint(" PID:"); graphics.printf("0x%04X", gs.pid);
-            return "";
+        char help_extra[2][22];
+        const char* helpExtraPrintHelper(const int idx) {  // HAAAAAACKYSACK
+            if (!idx) {
+                snprintf(help_extra[idx], sizeof(help_extra[idx]),
+                    "%-10s B:%d X:%d",
+                    gs.gamepad->type_name,
+                    gs.gamepad->button_count,
+                    gs.gamepad->axis_count
+                );
+            } else {
+                snprintf(help_extra[idx], sizeof(help_extra[idx]),
+                    "VID:0x%04X PID:0x%04X",
+                    gs.vid,
+                    gs.pid
+                );
+            }
+            return help_extra[idx];
         }
 
     private:
