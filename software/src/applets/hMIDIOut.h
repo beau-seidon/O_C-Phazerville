@@ -422,7 +422,8 @@ private:
 
         // Last log entry
         if (log_index > 0) {
-            PrintLogEntry(56, log_index - 1);
+            int idx = log_index - 1;
+            PrintLogEntry(56, idx - (log[idx].message == HEM_MIDI_NOTE_OFF && idx > 1));  // && idx > 1 can be deleted if HEM_MIDI_NOTE_OFF can't be the first message logged
         }
         gfxInvert(0, 55, 63, 9);
     }
